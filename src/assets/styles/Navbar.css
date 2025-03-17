@@ -1,0 +1,78 @@
+.container {
+    background-color: #005ae0;
+    height: 100vh; 
+    width: 45px; 
+    display: flex;
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: space-between; 
+    position: fixed;
+    left: 0; 
+    top: 0;
+    z-index: 99;
+    padding: 20px 10px;
+}
+
+.img-user{
+    height: 48px;
+    width: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 50%;
+}
+.header{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 25vh; 
+    margin-top: 10px;
+    gap: 20px;
+}
+.icons-info{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+}
+.icon-chat{
+    background-color: #00388d;
+    padding: 10px;
+    border-radius: 10%;
+    cursor: pointer;
+}
+.icon-contact{
+    background-color: #005ae0;
+    padding: 10px;
+    border-radius: 10%;
+    cursor: pointer;
+}
+.icon-chat:hover, .icon-contact:hover, .icon-cloud:hover, .icon-setting:hover{
+    background-color: #00388d;
+}
+.icon-chat svg, .icon-contact svg, .icon-cloud svg, .icon-setting svg{
+    color: white;
+    width: 26px;
+    height: 26px;
+}
+.footer{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+    margin-bottom: 40px;
+}
+.icon-cloud{
+    background-color: #005ae0;
+    padding: 10px;
+    border-radius: 10%;
+    cursor: pointer;
+}
+.icon-setting{
+    background-color: #005ae0;
+    padding: 10px;
+    border-radius: 10%;
+    cursor: pointer;
+}
