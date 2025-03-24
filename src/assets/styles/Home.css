@@ -1,0 +1,311 @@
+.home-container {
+    display: flex;
+    height: 100vh; 
+    margin-left: 64px; 
+}
+.left-section{
+    flex: 1; 
+    display: flex;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    background-color: #ff5733; 
+    flex-direction: column;
+    border-right: 1px solid #cbccce;
+}
+.search-section{
+    background-color: #fff;
+    width: 100%;
+    height: 64px;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+}
+.search-input {
+    display: flex;
+    align-items: center;
+    background-color: #ebecf0; 
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: 1px solid #ebecf0;
+    width: 240px; 
+    height: 32px;
+}
+.search-input svg {
+    color: #666;
+    font-size: .875rem;
+    margin-right: 8px; 
+}
+.icon-adduser{
+    font-size: 1.25rem;
+    color: black;
+    cursor: pointer;
+}
+.icon-addgroup{
+    font-size: 1.25rem;
+    color: black;
+    cursor: pointer;
+}
+.icon-section{
+    display: flex;
+    gap: 18px;
+}
+.search-input input {
+    border: none;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    font-size: 16px;
+}
+.user-chat-section{
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+}
+.category-menu{
+    display: flex;
+    flex-direction: row;
+    padding: 0 16px; 
+    justify-content: space-between; 
+    align-items: center;  
+    border-bottom: 1px solid #cbccce;
+}
+.btn-section{
+    display: flex;
+    gap: 16px;
+    height: 32px;
+    align-items: center;
+    
+    text-align: center;
+    
+}
+.btn-prioritize{
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    text-decoration: none;
+    color: #86909f;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-other{
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    text-decoration: none;
+    color: #86909f;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.active{
+    color: #1763d5;
+    border-bottom: #1763d5 2px solid;
+}
+.other-section{
+    display: flex;
+    flex-direction: row;
+    gap: 14px;
+}
+.form-select{
+    padding: 2px 31px 4px 12px;
+    /* max-width: 95px;
+    width: 95px;
+    height: 25px; */
+    text-align: center;
+    text-align-last: center; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: background-color 0.1s ease-in-out, border-color 0.1s;
+    cursor: pointer;
+    border: none;
+}
+.form-select:hover{
+    background-color: #ebecf0;
+    
+}
+.btn-ellip{
+     font-size: 25px; 
+     color: #000000;
+     cursor: pointer;
+}
+
+
+.list-mess {
+    width: 100%;
+    max-width: 400px;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    max-height: 632px; /* Giới hạn chiều cao khung chat */
+    overflow-y: auto; /* Cho phép cuộn dọc */
+    scrollbar-width: thin; /* Ẩn bớt thanh cuộn */
+    scrollbar-color: #ccc transparent; /* Màu thanh cuộn */
+}
+.img-user{
+    height: 48px;
+    width: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    border-radius: 50%;
+}
+.message-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    background-color: #f7f8fa;
+}
+
+.message-item:hover {
+    background: #f0f0f0;
+}
+.message-item.selected {
+    background-color: #daebff;
+}
+.message-content {
+    flex: 1;
+    margin-left: 10px;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.message-name {
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #000000;
+}
+
+.message-time {
+    color: gray;
+    font-size: .75rem;
+    font-weight: 400;
+    line-height: 1.5;
+    transition: color 0.2s ease-in-out
+}
+
+.message-text {
+    color: #666;
+    font-size: .875rem;
+    font-weight: 400;
+    line-height: 1.5;
+    margin-top: 3px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    word-wrap: break-word;
+    max-width: 200px;
+    text-align: left;
+}
+.custom-modal {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.right-section{
+    flex: 3; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    background-color: #6fd4ff; 
+    height: 100vh;
+    width: 100%;
+}
+/* .right-section {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; 
+    border-left: 1px solid #ccc;
+} */
+
+.body-chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.header-chat {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #cbccce;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    height: 68px;
+    min-height: 68px;
+    padding: 0px 16px;
+}
+.info-chat{
+    display: flex;  
+    gap: 10px;
+    align-items: center;
+}
+.title-chat{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    height: 70%;
+}
+.title-name{
+    font-size: 1.125rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: #000000;
+}
+.title-status{
+    font-size: .875rem;
+    color: #5a6981;
+    font-weight: 400;
+    line-height: 1.5;
+}
+.content-chat {
+    flex: 1;
+    overflow-y: auto; /* Cho phép cuộn nội dung */
+    padding: 15px;
+    background-color: #ebecf0;
+}
+
+.footer-chat {
+    padding: 15px;
+    background-color: #ffffff;
+    border-top: 1px solid #cbccce;
+    position: sticky;
+    bottom: 0;
+    z-index: 1000;
+}

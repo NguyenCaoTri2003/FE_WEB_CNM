@@ -12,10 +12,10 @@ const Navbar = () => {
     };
 
     return (
-            <div className="container">
+            <div className="container-main">
                 <div className="header">
                     <div className="user-avatar">
-                        <img className='img-user' src="/img/avt1.jpg" alt="icon-login" />
+                        <img className='img-user' src="/img/avt1.jpg" alt="icon-user" />
                     </div>
                     <div className="icons-info">
                         <div className="icon-chat">
