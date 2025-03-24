@@ -18,12 +18,16 @@ const Navbar = () => {
                         <img className='img-user' src="/img/avt1.jpg" alt="icon-user" />
                     </div>
                     <div className="icons-info">
-                        <div className="icon-chat">
-                            <FontAwesomeIcon icon={faComments} />
-                        </div>
-                        <div className="icon-contact">
-                            <FontAwesomeIcon icon={faContactBook} />
-                        </div>
+                        <Link to="/">
+                            <div className="icon-chat">
+                                <FontAwesomeIcon icon={faComments} />
+                            </div>
+                        </Link>
+                        <Link to="/danh-sach">
+                            <div className="icon-contact">
+                                <FontAwesomeIcon icon={faContactBook} />
+                            </div>
+                        </Link>
                     </div>
                 </div>
                 <div className="footer">
