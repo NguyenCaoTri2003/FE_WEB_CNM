@@ -1,5 +1,143 @@
 .contact-page{
-    background-color: rgb(227, 236, 236);
+    background-color: #EBECF0;
     width: 100%;
     height: 100%;
+}
+
+.head-page-contact {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 20px 20px;
+    background-color: #fff;
+    border-bottom: 1px solid #CBCCCE;
+    color: black;
+}
+
+.card-list-wapper{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 20px;
+}
+
+.text-head-page-contact{
+    margin: 0;
+    display: flex;
+    align-items: center;
+    font-size: 15px;
+    color: black;
+}
+
+.backgroud-list {
+    background-color: white;
+    border-radius: 5px;
+}
+
+.filter {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background-color: #fff;
+    padding: 20px 20px;
+    border-radius: 5px;
+}
+
+.sreach {
+    height: 32px;
+    flex: 1;
+    display: flex;
+    position: relative;
+}
+
+.sreach input {
+    width: 100%;
+    border-radius: 5px;
+    border: 1px solid #EBECF0;
+    height: auto;
+    font-size: 14px;
+    padding-left: 30px;
+    padding-right: 10px;
+    outline: none;
+}
+
+.sreach svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: .875rem;
+}
+
+.filter-contact{
+    flex: 1;
+    height: 32px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.sort {
+    flex: 1;
+    height: 32px;
+    font-size: 14px;
+}
+
+.sort select {
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    border: 1px solid #EBECF0;
+    outline: none;
+    padding: 0 10px;
+    font-size: 14px;
+}
+
+.list-contact {
+    background-color: white;
+}
+
+.item-wapper {
+    padding: 10px 20px;
+    background-color: rgb(255, 255, 255);
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 1px solid #CBCCCE;
+}
+.item-wapper:hover {
+    background-color: #f0f0f0;
+}
+
+.img-size {
+    width: 50px;
+    height: 50px;
+    border-radius: 5px;
+    background-color: aquamarine;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+.info-item svg{
+    color: black;
+}
+.info-item p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+}
+
+.name-item {
+    color: black;
+    font-size: 16px;
+}
+
+.zise-item {
+    color: #666;
+    font-size: 13px;
+    font-weight: 400;
 }
