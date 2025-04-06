@@ -3,9 +3,9 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import '../../assets/styles/Home.css';
 import { useState, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch} from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faLaughBeam, faImage, faFileCirclePlus, faAddressCard, faUserGroup} from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-modal";
-import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined } from "@ant-design/icons";
+import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, MehOutlined, LikeFilled, BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled } from "@ant-design/icons";
 Modal.setAppElement("#root");
 interface Message {
     id: number;
@@ -116,6 +116,28 @@ const Home = () => {
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     
     const moreIconRef = useRef<HTMLSpanElement | null>(null);
+
+    //tạo ref cho textarea để lấy giá trị chiều cao của textarea
+
+    const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+    //mở cài đặt tin nhắn
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // đóng mở hình ảnh
+    const [isCollapsed, setIsCollapsed] = useState(false);
+    
+    const toggleCollapse = () => {
+        setIsCollapsed(!isCollapsed);
+    };
+
+
+    const handleInput = () => {
+        if (textAreaRef.current) {
+            textAreaRef.current.style.height = "auto"; // Reset chiều cao
+            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; // Tăng chiều cao theo nội dung
+        }
+    };
 
     return (
         <div className="home-container">
@@ -230,7 +252,7 @@ const Home = () => {
             </div>
             <div className="right-section">
                 {selectedUser ? (
-                    <div className="body-chat">
+                    <div className={`body-chat ${isSidebarOpen ? "shrink" : ""}`}>
                         <div className="header-chat">
                             <div className="info-chat">
                                 <img className='img-user' src={selectedUser.avatar} alt="icon-user" />
@@ -242,18 +264,99 @@ const Home = () => {
                             <div className="icon-section-chat">
                                 <UsergroupAddOutlined className="icon-addgroup"/>
                                 <VideoCameraOutlined className="icon-videochat"/>
-                                <MenuFoldOutlined className="icon-menufold"/>
+                                <MenuFoldOutlined className="icon-menufold" onClick={() => setIsSidebarOpen(!isSidebarOpen)} />
                             </div>
                         </div>
                         <div className="content-chat">
-
+                            
                         </div>
                         <div className="footer-chat">
-
+                            <div className="menu-section-chat">
+                                <FontAwesomeIcon icon={faLaughBeam} />
+                                <FontAwesomeIcon icon={faImage} />
+                                <FontAwesomeIcon icon={faFileCirclePlus} />
+                                <FontAwesomeIcon icon={faAddressCard} />
+                            </div>
+                            <div className="chat-section">
+                                {/* <input type="text" className="chat-input" placeholder="Nhập tin nhắn..." /> */}
+                                <textarea 
+                                ref={textAreaRef}
+                                className="chat-input"
+                                placeholder="Nhập tin nhắn..." 
+                                onInput={handleInput}
+                                ></textarea>
+                                <div className="menu-button">
+                                    <FontAwesomeIcon icon={faLaughBeam} />
+                                    <LikeFilled className="icon-menufold"/>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ) : (
+                    // Nếu không có người dùng nào được chọn, hiển thị thông báo
                     <h2>Chọn một cuộc trò chuyện</h2>
+                )}
+                {/* Sidebar cài đặt cuộc trò chuyện */}
+                {isSidebarOpen && (
+                    <div className="sidebar-chat">
+                        <div className="sidebar-header">
+                            <p>Thông báo hội thoại</p>
+                        </div>
+                        <div className="sidebar-content">
+                            <div className="header-info">
+                                <div className="img-user">
+                                    <img className='img-user' src={selectedUser?.avatar} alt="icon-user" />
+                                </div>
+                                <div className="name-user">
+                                    <p className="name-user">{selectedUser?.name}</p>
+                                    <EditOutlined className="icon-edit"/>
+                                </div>
+                                <div className="btn-user-type">
+                                    <div className="btn-unnotify">
+                                        <BellOutlined className="icon-bell"/>
+                                        <p className="text-icon">Tắt thông báo</p>
+                                    </div>
+                                    <div className="btn-pin">
+                                        <PushpinOutlined className="icon-pin"/>
+                                        <p className="text-icon"> Ghim hội thoại</p>
+                                    </div>
+                                    <div className="btn-addgroup">
+                                        <UsergroupAddOutlined className="icon-usegroup"/>
+                                        <p className="text-icon">Tạo nhóm trò chuyện</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="type">
+                                <div className="btn-number-group">
+                                    <FontAwesomeIcon icon={faUserGroup} />
+                                    <p><span>4 </span>nhóm chung</p>
+                                </div>
+                            </div>
+                            <div className="img-section">
+                                <div className="header-img">
+                                    <p>Ảnh/Video</p>
+                                    {isCollapsed ? <CaretRightFilled className="icon-right" onClick={toggleCollapse}/> : <CaretDownFilled className="icon-right" onClick={toggleCollapse}/> }
+                                </div>
+                                {!isCollapsed && (
+                                    <div className="p-4 grid grid-cols-3 gap-2">
+                                        <div className="content-img"></div>
+                                        <div className="footer-img">
+                                            <div className="btn-orther-img">
+                                                <p>Xem tất cả</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                )}
+                                
+                                
+                            </div>
+                            <div className="file-section"></div>
+                            <div className="link-section"></div>
+                            <div className="security-section"></div>
+                            <div className="footer-info"></div>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>
