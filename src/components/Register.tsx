@@ -29,6 +29,29 @@ const Register = () => {
           onChange={(e) => setPhone(e.target.value)}
         />
       </div>
+
+      <div className="phone-input-group">
+        
+        <input
+          type="text"
+          placeholder="Tên người dùng"
+        />
+      </div>
+
+      <div className="phone-input-group">
+        <input
+          type="password"
+          placeholder="Mật khẩu"
+        />
+      </div>
+
+      <div className="phone-input-group">
+        <input
+          type="text"
+          placeholder="Nhập lại mật khẩu"
+        />
+      </div>
+      
       <button className="register-btn" onClick={handleNext}>
         Tiếp tục
       </button>
