@@ -1,0 +1,72 @@
+.register-container {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  
+  .zalo-title {
+    font-size: 32px;
+    font-weight: bold;
+    color: #0068ff;
+    margin-bottom: 10px;
+  }
+  
+  .register-title {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+  
+  .phone-input-group {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 15px 0;
+  }
+  
+  .phone-input-group span {
+    margin-right: 8px;
+    font-weight: bold;
+  }
+  
+  .phone-input-group input {
+    flex: 1;
+    border: none;
+    outline: none;
+  }
+  
+  .phone-confirm {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 10px 0;
+  }
+  
+  .terms {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+  
+  .register-btn {
+    background-color: #0068ff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .cancel-btn {
+    background: none;
+    color: #0068ff;
+    border: none;
+    cursor: pointer;
+  }
+  

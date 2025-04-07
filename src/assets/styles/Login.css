@@ -1,0 +1,95 @@
+.login-container {
+    width: 360px;
+    margin: 80px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px #ccc;
+    text-align: center;
+    font-family: Arial, sans-serif;
+  }
+  
+  .zalo-title {
+    font-size: 32px;
+    color: #0068ff;
+    font-weight: bold;
+  }
+  
+  .login-title {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #333;
+  }
+  
+  .input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  
+  .input-group input {
+    flex: 1;
+  }
+  
+  input[type="text"],
+  input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .captcha-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .captcha-img {
+    background: #eee;
+    padding: 10px;
+    font-weight: bold;
+    font-family: monospace;
+  }
+  
+  .login-btn {
+    width: 100%;
+    padding: 10px;
+    background: #0068ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-top: 15px;
+    cursor: pointer;
+  }
+  
+  .forgot-password,
+  .qr-login {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #0068ff;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .register-link {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .register-link a {
+    color: #0080ff;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .register-link a:hover {
+    text-decoration: underline;
+  }
+  
+  
