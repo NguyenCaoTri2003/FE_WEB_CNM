@@ -1,146 +1,215 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import '../../assets/styles/Home.css';
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faLaughBeam, faImage, faFileCirclePlus, faAddressCard, faUserGroup} from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faLaughBeam, faImage, faFileCirclePlus, faAddressCard, faUserGroup, faUser } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-modal";
-import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, MehOutlined, LikeFilled, BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled } from "@ant-design/icons";
+import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, MehOutlined, LikeFilled, BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled, UserOutlined, MessageOutlined, TeamOutlined, PhoneOutlined, CloudOutlined, ContactsOutlined, CheckSquareOutlined, CloudDownloadOutlined, BorderOuterOutlined, SettingOutlined, BarsOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
+
 Modal.setAppElement("#root");
+
 interface Message {
     id: number;
     name: string;
     message: string;
     time: string;
-    avatar: string;
 }
+
 const messages: Message[]  = [
     {
         id: 1,
         name: "Nguyễn Văn A",
         message: "Bạn có rảnh không. jhfgduiofjhbskjdlfdjdnskjlfjdkslfjndklfmn",
-        time: "14:30",
-        avatar: "img/avt1.jpg"
+        time: "14:30"
     },
     {
         id: 2,
         name: "Trần Thị B",
         message: "Tối nay đi chơi nhé!",
-        time: "13:15",
-        avatar: "img/avt1.jpg"
+        time: "13:15"
     },
     {
         id: 3,
         name: "Nhóm bạn bè",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
-    }
-    ,
+        time: "12:50"
+    },
     {
         id: 4,
         name: "Nhóm bạn bè 4",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
-    }
-    ,
+        time: "12:50"
+    },
     {
         id: 5,
         name: "Nhóm bạn bè 5",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
-    }
-    ,
+        time: "12:50"
+    },
     {
         id: 6,
         name: "Nhóm bạn bè 6",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
-    }
-    ,
+        time: "12:50"
+    },
     {
         id: 7,
         name: "Nhóm bạn bè 7",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
-    }
-    ,
+        time: "12:50"
+    },
     {
         id: 8,
         name: "Nhóm bạn bè 8",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
+        time: "12:50"
     },
     {
         id: 9,
         name: "Nhóm bạn bè 9",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
+        time: "12:50"
     },
     {
         id: 10,
         name: "Nhóm bạn bè 10",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
+        time: "12:50"
     },
     {
         id: 11,
         name: "Nhóm bạn bè 11",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
+        time: "12:50"
     },
     {
-        id: 12 ,
+        id: 12,
         name: "Nhóm bạn bè 12",
         message: "Họp nhóm lúc 20:00",
-        time: "12:50",
-        avatar: "img/avt1.jpg"
+        time: "12:50"
     }
-
 ];
 
 const Home = () => {
-
+    const navigate = useNavigate();
     const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
     const [selectedUser, setSelectedUser] = useState<Message | null>(null);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
-    
     const moreIconRef = useRef<HTMLSpanElement | null>(null);
-
-    //tạo ref cho textarea để lấy giá trị chiều cao của textarea
-
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
-
-    //mở cài đặt tin nhắn
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    // đóng mở hình ảnh
     const [isCollapsed, setIsCollapsed] = useState(false);
-    
+    const [showSettings, setShowSettings] = useState(false);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            navigate('/login');
+        }
+
+        // Click outside to close settings
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('.settings-dropdown') && !target.closest('.settings-trigger')) {
+                setShowSettings(false);
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [navigate]);
+
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed);
     };
 
-
     const handleInput = () => {
         if (textAreaRef.current) {
-            textAreaRef.current.style.height = "auto"; // Reset chiều cao
-            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`; // Tăng chiều cao theo nội dung
+            textAreaRef.current.style.height = "auto";
+            textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
         }
+    };
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/login');
     };
 
     return (
         <div className="home-container">
+            <div className="menu-left">
+                <div className="menu-top">
+                    <div className="avatar">
+                        <img src="https://res.cloudinary.com/ds4v3awds/image/upload/v1743944990/l2eq6atjnmzpppjqkk1j.jpg" alt="User" />
+                    </div>
+                    <div className="menu-item active">
+                        <MessageOutlined />
+                    </div>
+                    <div className="menu-item">
+                        <ContactsOutlined />
+                    </div>
+                    <div className="menu-item">
+                        <CheckSquareOutlined />
+                    </div>
+                </div>
+                <div className="menu-bottom">
+                    <div className="menu-item">
+                        <CloudOutlined />
+                    </div>
+                    <div className="menu-item">
+                        <CloudDownloadOutlined />
+                    </div>
+                    <div className="menu-item">
+                        <BorderOuterOutlined />
+                    </div>
+                    <div className="menu-item">
+                        <BarsOutlined />
+                    </div>
+                    <div 
+                        className={`menu-item settings-trigger ${showSettings ? 'active' : ''}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowSettings(!showSettings);
+                        }}
+                    >
+                        <SettingOutlined />
+                    </div>
+                </div>
+            </div>
+
+            {showSettings && (
+                <div className="settings-dropdown">
+                    <div className="menu-item">
+                        <UserOutlined />
+                        Thông tin tài khoản
+                    </div>
+                    <div className="menu-item">
+                        <SettingOutlined />
+                        Cài đặt
+                    </div>
+                    <div className="menu-item">
+                        <GlobalOutlined />
+                        Ngôn ngữ
+                    </div>
+                    <div className="menu-item">
+                        <QuestionCircleOutlined />
+                        Hỗ trợ
+                    </div>
+                    <div className="divider"></div>
+                    <div className="menu-item danger" onClick={handleLogout}>
+                        <UserSwitchOutlined />
+                        Đăng xuất
+                    </div>
+                    <div className="menu-item">
+                        Thoát
+                    </div>
+                </div>
+            )}
+
             <div className="left-section">
                 <div className="search-section">
                     <div className="search-input">
@@ -178,32 +247,23 @@ const Home = () => {
                                 onMouseLeave={() => setHoveredMessageId(null)}
                                 onClick={() => setSelectedUser(msg)}
                             >
-                                <img className='img-user' src={msg.avatar} alt="icon-user" />
+                                <div className="avatar-icon">
+                                    <UserOutlined />
+                                </div>
                                 <div className="message-content">
                                     <div className="message-header">
                                         <span className="message-name">{msg.name}</span>
                                         <span 
-                                            // className="message-time" 
-                                            // onClick={() => {
-                                            //     setSelectedMessageId(msg.id);
-                                            //     setIsModalOpen(true);
-                                            // }}
-                                            // ref={moreIconRef}
                                             className="message-time" 
                                             onClick={(e) => {
                                                 setSelectedMessageId(msg.id);
                                                 setIsModalOpen(true);
-                                        
-                                                // Lấy vị trí của icon ba chấm
                                                 const rect = e.currentTarget.getBoundingClientRect();
                                                 const windowHeight = window.innerHeight;
-                                                const modalHeight = 100; // Giả sử modal cao 100px
-                                        
-                                                // Nếu icon gần đáy màn hình, hiển thị modal phía trên icon
+                                                const modalHeight = 100;
                                                 const topPosition = (rect.bottom + modalHeight > windowHeight -200)
-                                                    ? rect.top - modalHeight - 10 // Hiển thị trên
-                                                    : rect.bottom + 5; // Hiển thị dưới
-                                        
+                                                    ? rect.top - modalHeight - 10
+                                                    : rect.bottom + 5;
                                                 setModalPosition({
                                                     top: topPosition,
                                                     left: rect.left
@@ -218,36 +278,31 @@ const Home = () => {
                             </div>
                         ))}
                     </div>
-                    {/* Modal */}
-                <Modal
-                    // isOpen={isModalOpen}
-                    // onRequestClose={() => setIsModalOpen(false)}
-                    // className="custom-modal"
-                    // overlayClassName="overlay"
-                    isOpen={isModalOpen}
-                    onRequestClose={() => setIsModalOpen(false)}
-                    className="custom-modal"
-                    overlayClassName="overlay"
-                    style={{
-                        content: {
-                            top: `${modalPosition.top}px`,
-                            left: `${modalPosition.left}px`,
-                            transform: "translateY(0)",
-                            position: "absolute",
-                            width: "200px",
-                            backgroundColor: "white",
-                            border: "1px solid #ccc",
-                            padding: "10px",
-                            borderRadius: "5px"
-                        }
-                    }}
-                >
-                    <h3>Tùy chọn tin nhắn</h3>
-                    <button onClick={() => console.log("Sao chép")}>Sao chép tin nhắn</button>
-                    <button onClick={() => console.log("Xóa")}>Xóa tin nhắn</button>
-                    <button onClick={() => console.log("Báo cáo")}>Báo cáo tin nhắn</button>
-                    <button onClick={() => setIsModalOpen(false)}>Đóng</button>
-                </Modal>
+                    <Modal
+                        isOpen={isModalOpen}
+                        onRequestClose={() => setIsModalOpen(false)}
+                        className="custom-modal"
+                        overlayClassName="overlay"
+                        style={{
+                            content: {
+                                top: `${modalPosition.top}px`,
+                                left: `${modalPosition.left}px`,
+                                transform: "translateY(0)",
+                                position: "absolute",
+                                width: "200px",
+                                backgroundColor: "white",
+                                border: "1px solid #ccc",
+                                padding: "10px",
+                                borderRadius: "5px"
+                            }
+                        }}
+                    >
+                        <h3>Tùy chọn tin nhắn</h3>
+                        <button onClick={() => console.log("Sao chép")}>Sao chép tin nhắn</button>
+                        <button onClick={() => console.log("Xóa")}>Xóa tin nhắn</button>
+                        <button onClick={() => console.log("Báo cáo")}>Báo cáo tin nhắn</button>
+                        <button onClick={() => setIsModalOpen(false)}>Đóng</button>
+                    </Modal>
                 </div>
             </div>
             <div className="right-section">
@@ -255,7 +310,9 @@ const Home = () => {
                     <div className={`body-chat ${isSidebarOpen ? "shrink" : ""}`}>
                         <div className="header-chat">
                             <div className="info-chat">
-                                <img className='img-user' src={selectedUser.avatar} alt="icon-user" />
+                                <div className="avatar-icon">
+                                    <UserOutlined />
+                                </div>
                                 <div className="title-chat">
                                     <span className="title-name">{selectedUser.name}</span>
                                     <span className="title-status">Đang hoạt động</span>
@@ -278,12 +335,11 @@ const Home = () => {
                                 <FontAwesomeIcon icon={faAddressCard} />
                             </div>
                             <div className="chat-section">
-                                {/* <input type="text" className="chat-input" placeholder="Nhập tin nhắn..." /> */}
                                 <textarea 
-                                ref={textAreaRef}
-                                className="chat-input"
-                                placeholder="Nhập tin nhắn..." 
-                                onInput={handleInput}
+                                    ref={textAreaRef}
+                                    className="chat-input"
+                                    placeholder="Nhập tin nhắn..." 
+                                    onInput={handleInput}
                                 ></textarea>
                                 <div className="menu-button">
                                     <FontAwesomeIcon icon={faLaughBeam} />
@@ -293,10 +349,8 @@ const Home = () => {
                         </div>
                     </div>
                 ) : (
-                    // Nếu không có người dùng nào được chọn, hiển thị thông báo
                     <h2>Chọn một cuộc trò chuyện</h2>
                 )}
-                {/* Sidebar cài đặt cuộc trò chuyện */}
                 {isSidebarOpen && (
                     <div className="sidebar-chat">
                         <div className="sidebar-header">
@@ -304,8 +358,8 @@ const Home = () => {
                         </div>
                         <div className="sidebar-content">
                             <div className="header-info">
-                                <div className="img-user">
-                                    <img className='img-user' src={selectedUser?.avatar} alt="icon-user" />
+                                <div className="avatar-icon">
+                                    <UserOutlined />
                                 </div>
                                 <div className="name-user">
                                     <p className="name-user">{selectedUser?.name}</p>
@@ -346,10 +400,7 @@ const Home = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    
                                 )}
-                                
-                                
                             </div>
                             <div className="file-section"></div>
                             <div className="link-section"></div>
