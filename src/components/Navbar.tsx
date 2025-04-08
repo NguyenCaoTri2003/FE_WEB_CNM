@@ -34,9 +34,12 @@ const Navbar = () => {
                         <div className="icon-cloud">
                             <FontAwesomeIcon icon={faCloud} />
                         </div>
-                        <div className="icon-setting">
-                            <FontAwesomeIcon icon={faTools} />
-                        </div>
+                        <Link to="/cai-dat">
+                            <div className="icon-setting">
+                                <FontAwesomeIcon icon={faTools} />
+                            </div>
+                        </Link>
+                        
                 </div>
             </div>
     );

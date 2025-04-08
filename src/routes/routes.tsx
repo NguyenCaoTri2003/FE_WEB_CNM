@@ -7,6 +7,8 @@ import GroupList from '../pages/user/FriendLayout/pages/GroupList';
 import FriendList from '../pages/user/FriendLayout/pages/FriendList';
 import FriendInvitation from '../pages/user/FriendLayout/pages/FriendInvitation';
 import GroupInvitation from '../pages/user/FriendLayout/pages/GroupInvitation';
+import SettingLayout from '../pages/user/SettingLayout/SettingLayout';
+import Profile from '../pages/user/SettingLayout/pages/Profile';
 
 const AppRoutes = () => {
     return(
@@ -19,6 +21,9 @@ const AppRoutes = () => {
                     <Route path="danh-sach-nhom" element={<GroupList />} />
                     <Route path="danh-sach-loi-moi-ket-ban" element={<FriendInvitation />} />
                     <Route path="danh-sach-loi-moi-vao-nhom" element={<GroupInvitation />} />
+                </Route>
+                <Route path="cai-dat" element={<SettingLayout />} >
+                    <Route path="thong-tin-ca-nhan" element={<Profile />} />
                 </Route>
             </Route>
 

@@ -1,0 +1,46 @@
+.setting-layout {
+    display: flex;
+    height: 100vh; 
+    margin-left: 64px;
+}
+
+.left-section{
+    flex: 1; 
+    display: flex;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    background-color: #ffffff; 
+    flex-direction: column;
+    border-right: 1px solid #cbccce;
+}
+.right-section{
+    flex: 3 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    background-color: #ffffff;
+    height: 100vh;
+    width: 100%;
+}
+
+.menu-setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    color: black;
+    padding: 15px 20px;
+    font-weight: 500;
+}
+
+.menu-setting-item:hover {
+    background-color: #DBEBFF;
+}
+
+a{
+    text-decoration: none;
+}
