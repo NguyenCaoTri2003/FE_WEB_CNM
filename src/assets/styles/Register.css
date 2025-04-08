@@ -1,0 +1,152 @@
+.register-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: url('https://res.cloudinary.com/ds4v3awds/image/upload/v1743940527/p8t4hgpjuthf19sbin88.png') no-repeat center center;
+    background-size: cover;
+    padding: 20px;
+}
+
+.register-card {
+    width: 100%;
+    max-width: 480px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.register-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.register-title {
+    color: #1890ff;
+    margin-bottom: 8px !important;
+}
+
+.register-subtitle {
+    color: rgba(0, 0, 0, 0.45);
+    margin-bottom: 0;
+}
+
+.register-form {
+    max-width: 360px;
+    margin: 0 auto;
+}
+
+.register-form .ant-input-affix-wrapper {
+    border-radius: 4px;
+}
+
+.register-form .ant-input-prefix {
+    color: rgba(0, 0, 0, 0.25);
+    margin-right: 12px;
+    font-size: 18px;
+}
+
+.register-form .ant-input-affix-wrapper .ant-input-prefix > * {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.register-form .ant-input-affix-wrapper {
+    height: 48px;
+    padding: 0 12px;
+}
+
+.register-form .ant-input-group-addon {
+    background-color: #fafafa;
+    padding: 0 12px;
+    font-weight: 500;
+}
+
+.register-form .ant-input {
+    height: 100%;
+    font-size: 16px;
+    padding-left: 8px;
+}
+
+.register-form .captcha-input {
+    height: 48px;
+    display: flex;
+    align-items: center;
+}
+
+/* Improved captcha container styling */
+.register-form .ant-form-item:has(.captcha-input) {
+    margin-bottom: 24px;
+}
+
+/* Style captcha container to match other inputs */
+.register-form .captcha-input {
+    font-size: 16px;
+    border-radius: 4px;
+}
+
+/* Ensure the captcha image and input are aligned properly */
+.register-form .ant-form-item-control-input-content > div {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+}
+
+/* Style the validation error messages */
+.register-form .ant-form-item-has-error .ant-form-item-explain-error {
+    margin-top: 4px;
+    font-size: 14px;
+}
+
+/* Style for the validation error message for captcha specifically */
+.register-form .ant-form-item:has(.captcha-input).ant-form-item-has-error .ant-form-item-explain-error {
+    margin-top: 8px;
+}
+
+/* Style for the input icon */
+.input-icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: #595959;
+}
+
+/* Additional styling for inputs */
+.register-input {
+    width: 100%;
+}
+
+/* Apply specific padding to maintain balance */
+.register-form .ant-input-affix-wrapper .ant-input {
+    padding-left: 0;
+}
+
+.register-button {
+    height: 40px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.register-footer {
+    text-align: center;
+    margin-top: 16px;
+}
+
+.register-footer .ant-btn-link {
+    padding: 0;
+    height: auto;
+}
+
+@media (max-width: 480px) {
+    .register-card {
+        max-width: 100%;
+    }
+    
+    .register-form {
+        max-width: 100%;
+    }
+}

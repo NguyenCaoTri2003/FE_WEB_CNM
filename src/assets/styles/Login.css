@@ -1,0 +1,216 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: url('https://uploads3cnm.s3.us-east-1.amazonaws.com/background.png') no-repeat center center;
+    background-size: cover;
+    padding: 20px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-title {
+    color: #1890ff;
+    margin-bottom: 8px !important;
+}
+
+.login-subtitle {
+    color: rgba(0, 0, 0, 0.45);
+    margin-bottom: 0;
+}
+
+.login-form {
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.login-form .ant-input-affix-wrapper {
+    border-radius: 4px;
+}
+
+.login-form .ant-input-prefix {
+    color: rgba(0, 0, 0, 0.25);
+    margin-right: 12px;
+    font-size: 18px;
+}
+
+.login-form .ant-input-affix-wrapper .ant-input-prefix > * {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-form .ant-input-affix-wrapper {
+    height: 48px;
+    padding: 0 12px;
+}
+
+.login-form .ant-input {
+    height: 100%;
+    font-size: 16px;
+    padding-left: 8px;
+}
+
+.login-form .captcha-input {
+    height: 48px;
+    display: flex;
+    align-items: center;
+}
+
+.login-button {
+    height: 40px;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.login-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+}
+
+.login-footer .ant-btn-link {
+    padding: 0;
+    height: auto;
+}
+
+@media (max-width: 480px) {
+    .login-card {
+        max-width: 100%;
+    }
+    
+    .login-form {
+        max-width: 100%;
+    }
+}
+  
+  .zalo-title {
+    font-size: 32px;
+    color: #0068ff;
+    font-weight: bold;
+  }
+  
+  .login-title {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #333;
+  }
+  
+  .input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  
+  .input-group input {
+    flex: 1;
+  }
+  
+  input[type="text"],
+  input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .captcha-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .captcha-img {
+    background: #eee;
+    padding: 10px;
+    font-weight: bold;
+    font-family: monospace;
+  }
+  
+  .login-btn {
+    width: 100%;
+    padding: 10px;
+    background: #0068ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin-top: 15px;
+    cursor: pointer;
+  }
+  
+  .forgot-password,
+  .qr-login {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #0068ff;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .register-link {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .register-link a {
+    color: #0080ff;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  
+  .register-link a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Style for the input icon */
+  .input-icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: #595959;
+  }
+  
+  /* Additional styling for inputs */
+  .login-input {
+    width: 100%;
+  }
+  
+  /* Apply specific padding to maintain balance */
+  .login-form .ant-input-affix-wrapper .ant-input {
+    padding-left: 0;
+  }
+  
+  /* Ensure the captcha image and input are aligned properly */
+  .login-form .ant-form-item-control-input-content > div {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+  }
+  
+  /* Style the validation error messages */
+  .login-form .ant-form-item-has-error .ant-form-item-explain-error {
+    margin-top: 4px;
+    font-size: 14px;
+  }
+  
+  
