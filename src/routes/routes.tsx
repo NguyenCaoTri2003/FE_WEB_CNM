@@ -66,13 +66,18 @@ import ForgotPassword from '../components/ForgotPassword';
 import RegisterConfirm from '../components/RegisterConfirm';
 import ResetPassword from 'components/ResetPassword';
 import UpdatePassword from 'components/UpdatePassword';
+import PrivateRoute from './PrivateRoutes';
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<MainLayout />}>
         
-        <Route path="user/home" element={<Home />} />
+        <Route path="user/home" element={
+            <PrivateRoute>
+                <Home />
+            </PrivateRoute>} 
+        />
         <Route path="danh-sach" element={<FriendLayout />} >
           <Route path="danh-sach-ban-be" element={<FriendList />} />
           <Route path="danh-sach-nhom" element={<GroupList />} />
@@ -81,11 +86,16 @@ const AppRoutes = () => {
         </Route>
 
         {/* <Route path="setting" element={<SettingLayout />} > */}
-          <Route path="profile" element={<Profile />} />
+          <Route path="profile" element={
+            <PrivateRoute>
+                <Profile />
+            </PrivateRoute>} />
         {/* </Route> */}
         <Route path="setting" element={<SettingLayout />} >
-            <Route path="update-password" element={<UpdatePassword />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="update-password" element={
+                <PrivateRoute>
+                    <UpdatePassword />
+                </PrivateRoute>} />
         </Route>
       </Route>
       <Route index element={<Login />} />
