@@ -1,6 +1,10 @@
 .profile-container {
     margin: 0 auto;
     font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
   }
   
   .profile-card {
@@ -9,6 +13,8 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     overflow: hidden;
     transition: all 0.3s ease;
+    width: 50%;
+    height: 50%;
   }
   
   .profile-background-wrapper {
@@ -169,4 +175,25 @@
     cursor: pointer;
     font-size: 20px;
   }
+  .edit-avatar-button {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 50%;
+    padding: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  .edit-avatar-button:hover {
+    background: rgba(200, 200, 200, 0.9);
+  }
+  
+  .avatar-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+  
   

@@ -46,7 +46,7 @@
     margin-right: 8px;
 }
 
-.search-input input {
+.search-input input[type="text"] {
     border: none;
     outline: none;
     background: transparent;
@@ -54,6 +54,8 @@
     font-size: 13px;
     color: #050505;
     height: 100%;
+    padding: 0px;
+    margin-bottom: 0px;
 }
 
 .search-input input::placeholder {

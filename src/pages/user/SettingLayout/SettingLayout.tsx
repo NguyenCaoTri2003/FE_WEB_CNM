@@ -7,29 +7,18 @@ const SettingLayout = () => {
         <div className="setting-layout">
             <div className="left-section">
                 <div className="menu-setting">
-                    <Link to="thong-tin-ca-nhan">
+                    {/* <Link to="forgot-password">
                         <div className="menu-setting-item">
-                            <p className="menu-item-name">Thông tin cá nhân</p>
+                            <p className="menu-item-name">Quên mật khẩu</p>
+                            <RightOutlined className="icon-right" />
+                        </div>
+                    </Link> */}
+                    <Link to="update-password">
+                        <div className="menu-setting-item">
+                            <p className="menu-item-name">Cập nhật mật khẩu</p>
                             <RightOutlined className="icon-right" />
                         </div>
                     </Link>
-                    
-                    <div className="menu-setting-item">
-                        <p className="menu-item-name">Bảo mật và đăng nhập</p>
-                        <RightOutlined className="icon-right" />
-                    </div>
-                    <div className="menu-setting-item">
-                        <p className="menu-item-name">Cài đặt chung</p>
-                        <RightOutlined className="icon-right" />
-                    </div>
-                    <div className="menu-setting-item">
-                        <p className="menu-item-name">Cài đặt ứng dụng</p>
-                        <RightOutlined className="icon-right" />
-                    </div>
-                    <div className="menu-setting-item">
-                        <p className="menu-item-name">Trợ giúp và hỗ trợ</p>
-                        <RightOutlined className="icon-right" />
-                    </div>
                 </div>
             </div>
             <div className="right-section">

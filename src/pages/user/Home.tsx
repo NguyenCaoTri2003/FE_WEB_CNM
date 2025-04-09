@@ -4,6 +4,7 @@ import '../../assets/styles/Home.css';
 import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faLaughBeam, faImage, faFileCirclePlus, faAddressCard, faUserGroup, faUser } from "@fortawesome/free-solid-svg-icons";
+import { Form, Input, Button, message, Card, Typography, Alert } from 'antd';
 import Modal from "react-modal";
 import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, MehOutlined, LikeFilled, BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled, UserOutlined, MessageOutlined, TeamOutlined, PhoneOutlined, CloudOutlined, ContactsOutlined, CheckSquareOutlined, CloudDownloadOutlined, BorderOuterOutlined, SettingOutlined, BarsOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -141,9 +142,9 @@ const Home = () => {
 
     return (
         <div className="home-container">
-            <div className="menu-left">
+            {/* <div className="menu-left">
                 <div className="menu-top">
-                    <div className="avatar">
+                    <div className="avatar"  onClick={() => navigate('/setting/profile')}>
                         <img src="https://res.cloudinary.com/ds4v3awds/image/upload/v1743944990/l2eq6atjnmzpppjqkk1j.jpg" alt="User" />
                     </div>
                     <div className="menu-item active">
@@ -208,7 +209,7 @@ const Home = () => {
                         Thoát
                     </div>
                 </div>
-            )}
+            )} */}
 
             <div className="left-section">
                 <div className="search-section">
