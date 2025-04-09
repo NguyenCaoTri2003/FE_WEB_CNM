@@ -112,17 +112,17 @@ const Profile: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     try {
-      let genderBoolean;
-      if (user?.gender === 'Nam') genderBoolean = true;
-      else if (user?.gender === 'Nữ') genderBoolean = false;
+      const dataToSend = {
+        fullName: user?.fullName,
+        phoneNumber: user?.phoneNumber,
+        gender: user?.gender === 'male' ? true : user?.gender === 'female' ? false : undefined,
+        address: user?.address?.trim() || null,
+      };
+      console.log("Data being sent to backend:", dataToSend);
+
       await axios.put(
         API_ENDPOINTS.profileweb,
-        {
-          fullName: user?.fullName,
-          phoneNumber: user?.phoneNumber,
-          gender: genderBoolean,
-          address: user?.address?.trim() || null,
-        },
+        dataToSend,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -134,6 +134,7 @@ const Profile: React.FC = () => {
       setIsEditing(false);
     } catch (error: any) {
       message.error("Lỗi cập nhật thông tin: " + (error.response?.data?.message || error.message));
+      console.error("Error response from backend:", error.response?.data);
     }
   };
 
