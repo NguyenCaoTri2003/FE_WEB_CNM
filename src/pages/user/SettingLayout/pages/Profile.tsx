@@ -239,12 +239,34 @@ const Profile: React.FC = () => {
             </form>
           ) : (
             <div className="profile-info">
+
               <h3>{user?.fullName}</h3>
+              <div className="profile-info-item">
+                <h5>Thông tin cá nhân</h5>
+                <div className="profile-info-detail">
+                  <div className="profile-info-detail-title">
+                    <p>Giới tính</p>
+                    <p>Số điện thoại</p>
+                    <p>Địa chỉ</p>
+                    <p>Email</p>
+                  </div>
+                  <div className="profile-info-detail-content">
+                    <p>{user?.gender === 'male' ? 'Nam' : user?.gender === 'female' ? 'Nữ' : 'Chưa cập nhật'}</p>
+                    <p>{user?.phoneNumber}</p>
+                    <p>{user?.address || "Chưa cập nhật"}</p>
+                    <p>{user?.email}</p>
+                  </div>
+                </div>
+                
+                <button onClick={() => setIsEditing(true)}>Chỉnh sửa hồ sơ</button>
+              </div>
+
+              {/* <h3>{user?.fullName}</h3>
               <p><strong>SĐT:</strong> {user?.phoneNumber}</p>
               <p><strong>Giới tính:</strong> {user?.gender === 'male' ? 'Nam' : user?.gender === 'female' ? 'Nữ' : 'Chưa cập nhật'}</p>
               <p><strong>Địa chỉ:</strong> {user?.address || "Chưa cập nhật"}</p>
-              <p><strong>Email:</strong> {user?.email}</p>
-              <button onClick={() => setIsEditing(true)}>Chỉnh sửa hồ sơ</button>
+              <p><strong>Email:</strong> {user?.email}</p> */}
+              
             </div>
           )}
 
