@@ -76,3 +76,39 @@
     cursor: pointer;
 }
 
+.settings-dropdown {
+    position: fixed;
+    left: 70px;
+    bottom: 20px;
+    width: 200px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    transform: translateY(0);
+}
+
+/* Add check for when menu would overflow at the bottom */
+@media screen and (max-height: 500px) {
+    .settings-dropdown {
+        bottom: auto;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+}
+
+.settings-dropdown .menu-item {
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #050505;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
