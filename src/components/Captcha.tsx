@@ -1,5 +1,5 @@
 import React, { useState, useCallback, forwardRef, useImperativeHandle, useEffect } from 'react';
-import { Input, Button } from 'antd';
+import { Input } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 
 interface CaptchaProps {

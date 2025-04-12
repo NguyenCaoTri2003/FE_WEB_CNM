@@ -63,7 +63,6 @@ import Profile from '../pages/user/SettingLayout/pages/Profile';
 import Login from '../pages/user/FriendLayout/pages/Login';
 import Register from '../components/Register';
 import ForgotPassword from '../components/ForgotPassword';
-import RegisterConfirm from '../components/RegisterConfirm';
 import ResetPassword from 'components/ResetPassword';
 import UpdatePassword from 'components/UpdatePassword';
 import PrivateRoute from './PrivateRoutes';
@@ -102,7 +101,6 @@ const AppRoutes = () => {
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
-        <Route path="register/confirm" element={<RegisterConfirm />} />
         <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   );

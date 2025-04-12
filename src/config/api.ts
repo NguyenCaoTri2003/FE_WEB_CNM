@@ -1,9 +1,9 @@
-import { upload } from "@testing-library/user-event/dist/upload";
-
 const API_BASE_URL = 'http://localhost:5000/api';
 
 export const API_ENDPOINTS = {
     register: `${API_BASE_URL}/register`,
+    registerSendVerification: `${API_BASE_URL}/register/send-verification`,
+    registerVerify: `${API_BASE_URL}/register/verify`,
     login: `${API_BASE_URL}/login`,
     profile: `${API_BASE_URL}/profile`,
     upload: `${API_BASE_URL}/upload`,

@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import '../assets/styles/Navbar.css';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTruck, faComments, faContactBook, faTools, faCloud } from "@fortawesome/free-solid-svg-icons";
+import { faComments, faContactBook, faTools, faCloud } from "@fortawesome/free-solid-svg-icons";
 import { API_ENDPOINTS } from '../config/api';
-import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, MehOutlined, LikeFilled, BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled, UserOutlined, MessageOutlined, TeamOutlined, PhoneOutlined, CloudOutlined, ContactsOutlined, CheckSquareOutlined, CloudDownloadOutlined, BorderOuterOutlined, SettingOutlined, BarsOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined } from "@ant-design/icons";
+import { UserOutlined, SettingOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
 
