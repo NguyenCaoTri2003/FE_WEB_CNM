@@ -105,6 +105,7 @@ const Home = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -215,8 +216,21 @@ const Home = () => {
                 <div className="search-section">
                     <div className="search-input">
                         <FontAwesomeIcon icon={faSearch} />
-                        <input type="text" placeholder="Tìm kiếm" />
+                        <input 
+                            type="text" 
+                            placeholder="Tìm kiếm" 
+                            onFocus={() => setIsSearching(true)} 
+                            onBlur={() => setTimeout(() => setIsSearching(false), 200)} 
+                        />
                     </div>
+                    {isSearching && (
+                        <div className="search-dropdown">
+                            <div className="search-item">Nguyễn Văn A</div>
+                            <div className="search-item">Trần Thị B</div>
+                            <div className="search-item">Nhóm bạn bè</div>
+                            <div className="search-item">...</div>
+                        </div>
+                    )}
                     <div className="icon-section">
                         <UserAddOutlined className="icon-adduser"/>
                         <UsergroupAddOutlined className="icon-addgroup"/>

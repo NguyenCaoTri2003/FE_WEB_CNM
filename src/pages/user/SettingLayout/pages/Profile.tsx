@@ -156,7 +156,7 @@ const Profile: React.FC = () => {
       <div className="profile-card">
         <div className="profile-background-wrapper">
           <div
-            className="profile-background"
+            className="profile-background"   
             style={{ backgroundImage: `url(${user?.avatar})` }}
           ></div>
         </div>

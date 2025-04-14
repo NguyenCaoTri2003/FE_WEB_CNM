@@ -35,6 +35,9 @@ const UpdatePassword: React.FC = () => {
     if (newPassword.length < 6) {
       errors.push('Mật khẩu mới phải có ít nhất 6 ký tự!');
     }
+    if (/\s/.test(newPassword)) {
+      errors.push('Mật khẩu mới không được chứa khoảng trắng!');
+    }
 
     if (errors.length > 0) {
       setFormErrors(errors);
@@ -74,7 +77,7 @@ const UpdatePassword: React.FC = () => {
     <div className="update-password-container">
       <Card className="update-password-card">
         <Title level={2} className="update-password-title">
-          Đổi mật khẩu
+          Cập nhật mật khẩu
         </Title>
 
         {formErrors.length > 0 && (
