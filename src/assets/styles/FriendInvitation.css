@@ -1,0 +1,75 @@
+.container-friend-invitation{
+    margin-left: 464px;
+}
+.title-friend-inv{
+    height: 49px;
+    width: 100%;
+    padding: 8px 16px;
+    border-bottom: 1px solid #e6e6e6;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+
+}
+.title-friend-inv p{
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+}
+.title-friend-inv svg{
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: black;
+}
+.list-friend-inv{
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    padding: 20px;
+    flex-wrap: wrap;
+}
+.avatar-friend-invitation{
+    width: 80px;
+    height: 80px;
+    min-width: 80px;
+    min-height: 80px;
+    border-radius: 50%;
+    border: 2px solid #d1d1d1;
+    object-fit: cover;
+}
+.friend-invitation-item{
+    width: 20%;
+    height: 200px;
+    background-color: rgb(238, 255, 249);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #d1d1d1;
+    border-radius: 20px;
+}
+.friend-invitation-btn{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0px 20px;
+}
+.btn-accept{
+    height: 32px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    background-color: #daebff;
+    color: #0045ad;
+    border: none;
+}
+.btn-decline{
+    height: 32px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    background-color: #ffdada;
+    color: #ad0000;
+    border: none;
+}

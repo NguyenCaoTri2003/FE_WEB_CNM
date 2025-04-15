@@ -63,10 +63,11 @@ import Profile from '../pages/user/SettingLayout/pages/Profile';
 import Login from '../pages/user/FriendLayout/pages/Login';
 import Register from '../components/Register';
 import ForgotPassword from '../components/ForgotPassword';
-import RegisterConfirm from '../components/RegisterConfirm';
 import ResetPassword from 'components/ResetPassword';
 import UpdatePassword from 'components/UpdatePassword';
 import PrivateRoute from './PrivateRoutes';
+import AddFriend from '../pages/user/FriendLayout/pages/AddFriend';
+import SearchNavbar from 'components/SearchNavbar';
 
 const AppRoutes = () => {
   return (
@@ -78,12 +79,16 @@ const AppRoutes = () => {
                 <Home />
             </PrivateRoute>} 
         />
-        <Route path="danh-sach" element={<FriendLayout />} >
+         <Route path="search" element={<SearchNavbar />} />
+        {/* <Route path="danh-sach" element={<FriendLayout />} >
           <Route path="danh-sach-ban-be" element={<FriendList />} />
           <Route path="danh-sach-nhom" element={<GroupList />} />
           <Route path="danh-sach-loi-moi-ket-ban" element={<FriendInvitation />} />
           <Route path="danh-sach-loi-moi-vao-nhom" element={<GroupInvitation />} />
-        </Route>
+          <Route path="addfriend" element={<AddFriend />} />
+        </Route> */}
+        <Route path="request-friend" element={<FriendInvitation />} />
+        <Route path="list-friend" element={<FriendList />} />
 
         {/* <Route path="setting" element={<SettingLayout />} > */}
           <Route path="profile" element={
@@ -102,7 +107,6 @@ const AppRoutes = () => {
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
         <Route path="forgot-password" element={<ForgotPassword />} />
-        <Route path="register/confirm" element={<RegisterConfirm />} />
         <Route path="/reset-password" element={<ResetPassword />} />
     </Routes>
   );

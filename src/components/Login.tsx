@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Form, Input, Button, message, Card, Typography, Alert } from 'antd';
-import { UserOutlined, LockOutlined, MessageOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { API_ENDPOINTS } from '../config/api';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -93,7 +93,7 @@ const Login: React.FC = () => {
             } else if (error.response?.data?.error === 'INVALID_PASSWORD') {
                 setPasswordError('Mật khẩu không chính xác');
             } else if (error.response?.data?.error === 'PASSWORD_TOO_SHORT') {
-                setPasswordError('Mật khẩu phải có ít nhất 6 ký tự');
+                setPasswordError('Mật khẩu phải có ít nhất 8 ký tự');
             } else {
                 message.error(errorResponse?.message || 'Đăng nhập thất bại. Vui lòng thử lại!');
             }
@@ -158,7 +158,7 @@ const Login: React.FC = () => {
                         name="password"
                         rules={[
                             { required: true, message: 'Vui lòng nhập mật khẩu!' },
-                            { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự!' }
+                            { min: 6, message: 'Mật khẩu phải có ít nhất 8 ký tự!' }
                         ]}
                         validateStatus={passwordError ? 'error' : ''}
                     >

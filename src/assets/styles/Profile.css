@@ -1,11 +1,13 @@
 .profile-container {
-    margin: 0 auto;
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 40px;
-  }
+  margin: 0px auto;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  margin-left: 525px;
+
+}
   
   .profile-card {
     background-color: #fff;

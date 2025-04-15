@@ -3,10 +3,9 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import '../../assets/styles/Home.css';
 import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faLaughBeam, faImage, faFileCirclePlus, faAddressCard, faUserGroup, faUser } from "@fortawesome/free-solid-svg-icons";
-import { Form, Input, Button, message, Card, Typography, Alert } from 'antd';
+import { faSearch, faLaughBeam, faImage, faFileCirclePlus, faAddressCard, faUserGroup } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-modal";
-import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, MehOutlined, LikeFilled, BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled, UserOutlined, MessageOutlined, TeamOutlined, PhoneOutlined, CloudOutlined, ContactsOutlined, CheckSquareOutlined, CloudDownloadOutlined, BorderOuterOutlined, SettingOutlined, BarsOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined } from "@ant-design/icons";
+import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, LikeFilled, BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled, UserOutlined} from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 
 Modal.setAppElement("#root");
@@ -97,36 +96,30 @@ const Home = () => {
     const navigate = useNavigate();
     const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
     const [selectedUser, setSelectedUser] = useState<Message | null>(null);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
-    const moreIconRef = useRef<HTMLSpanElement | null>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
-    const [isSearching, setIsSearching] = useState(false);
+    const [isCollapsedFile, setIsCollapsedFile] = useState(false);
+    const [isCollapsedLink, setIsCollapsedLink] = useState(false);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
             navigate('/login');
         }
-
-        // Click outside to close settings
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            if (!target.closest('.settings-dropdown') && !target.closest('.settings-trigger')) {
-                setShowSettings(false);
-            }
-        };
-
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
     }, [navigate]);
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed);
+    };
+    const toggleCollapseFile = () => {
+        setIsCollapsedFile(!isCollapsedFile);
+    };
+
+    const toggleCollapseLink = () => {
+        setIsCollapsedLink(!isCollapsedLink);
     };
 
     const handleInput = () => {
@@ -136,101 +129,14 @@ const Home = () => {
         }
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        navigate('/login');
-    };
-
     return (
         <div className="home-container">
-            {/* <div className="menu-left">
-                <div className="menu-top">
-                    <div className="avatar"  onClick={() => navigate('/setting/profile')}>
-                        <img src="https://res.cloudinary.com/ds4v3awds/image/upload/v1743944990/l2eq6atjnmzpppjqkk1j.jpg" alt="User" />
-                    </div>
-                    <div className="menu-item active">
-                        <MessageOutlined />
-                    </div>
-                    <div className="menu-item">
-                        <ContactsOutlined />
-                    </div>
-                    <div className="menu-item">
-                        <CheckSquareOutlined />
-                    </div>
-                </div>
-                <div className="menu-bottom">
-                    <div className="menu-item">
-                        <CloudOutlined />
-                    </div>
-                    <div className="menu-item">
-                        <CloudDownloadOutlined />
-                    </div>
-                    <div className="menu-item">
-                        <BorderOuterOutlined />
-                    </div>
-                    <div className="menu-item">
-                        <BarsOutlined />
-                    </div>
-                    <div 
-                        className={`menu-item settings-trigger ${showSettings ? 'active' : ''}`}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setShowSettings(!showSettings);
-                        }}
-                    >
-                        <SettingOutlined />
-                    </div>
-                </div>
-            </div>
-
-            {showSettings && (
-                <div className="settings-dropdown">
-                    <div className="menu-item">
-                        <UserOutlined />
-                        Thông tin tài khoản
-                    </div>
-                    <div className="menu-item">
-                        <SettingOutlined />
-                        Cài đặt
-                    </div>
-                    <div className="menu-item">
-                        <GlobalOutlined />
-                        Ngôn ngữ
-                    </div>
-                    <div className="menu-item">
-                        <QuestionCircleOutlined />
-                        Hỗ trợ
-                    </div>
-                    <div className="divider"></div>
-                    <div className="menu-item danger" onClick={handleLogout}>
-                        <UserSwitchOutlined />
-                        Đăng xuất
-                    </div>
-                    <div className="menu-item">
-                        Thoát
-                    </div>
-                </div>
-            )} */}
-
-            <div className="left-section">
+            {/* <div className="left-section">
                 <div className="search-section">
                     <div className="search-input">
                         <FontAwesomeIcon icon={faSearch} />
-                        <input 
-                            type="text" 
-                            placeholder="Tìm kiếm" 
-                            onFocus={() => setIsSearching(true)} 
-                            onBlur={() => setTimeout(() => setIsSearching(false), 200)} 
-                        />
+                        <input type="text" placeholder="Tìm kiếm" />
                     </div>
-                    {isSearching && (
-                        <div className="search-dropdown">
-                            <div className="search-item">Nguyễn Văn A</div>
-                            <div className="search-item">Trần Thị B</div>
-                            <div className="search-item">Nhóm bạn bè</div>
-                            <div className="search-item">...</div>
-                        </div>
-                    )}
                     <div className="icon-section">
                         <UserAddOutlined className="icon-adduser"/>
                         <UsergroupAddOutlined className="icon-addgroup"/>
@@ -239,8 +145,8 @@ const Home = () => {
                 <div className="user-chat-section">
                     <div className="category-menu">
                         <div className="btn-section">
-                            <a href="" className="btn-prioritize active">Ưu tiên</a>
-                            <a href="" className="btn-other">Khác</a>
+                            <button className="btn-prioritize active">Ưu tiên</button>
+                            <button className="btn-other">Khác</button>
                         </div>
                         <div className="other-section">
                             <div className="classify">
@@ -271,7 +177,7 @@ const Home = () => {
                                         <span 
                                             className="message-time" 
                                             onClick={(e) => {
-                                                setSelectedMessageId(msg.id);
+                                                setSelectedUser(msg);
                                                 setIsModalOpen(true);
                                                 const rect = e.currentTarget.getBoundingClientRect();
                                                 const windowHeight = window.innerHeight;
@@ -319,7 +225,7 @@ const Home = () => {
                         <button onClick={() => setIsModalOpen(false)}>Đóng</button>
                     </Modal>
                 </div>
-            </div>
+            </div> */}
             <div className="right-section">
                 {selectedUser ? (
                     <div className={`body-chat ${isSidebarOpen ? "shrink" : ""}`}>
@@ -404,9 +310,9 @@ const Home = () => {
                             <div className="img-section">
                                 <div className="header-img">
                                     <p>Ảnh/Video</p>
-                                    {isCollapsed ? <CaretRightFilled className="icon-right" onClick={toggleCollapse}/> : <CaretDownFilled className="icon-right" onClick={toggleCollapse}/> }
+                                    {!isCollapsed ? <CaretRightFilled className="icon-right" onClick={toggleCollapse}/> : <CaretDownFilled className="icon-right" onClick={toggleCollapse}/> }
                                 </div>
-                                {!isCollapsed && (
+                                {isCollapsed && (
                                     <div className="p-4 grid grid-cols-3 gap-2">
                                         <div className="content-img"></div>
                                         <div className="footer-img">
@@ -417,8 +323,38 @@ const Home = () => {
                                     </div>
                                 )}
                             </div>
-                            <div className="file-section"></div>
-                            <div className="link-section"></div>
+                            <div className="file-section">
+                                <div className="header-img">
+                                    <p>File</p>
+                                    {!isCollapsedFile ? <CaretRightFilled className="icon-right" onClick={toggleCollapseFile}/> : <CaretDownFilled className="icon-right" onClick={toggleCollapseFile}/> }
+                                </div>
+                                {isCollapsedFile && (
+                                    <div className="p-4 grid grid-cols-3 gap-2">
+                                        <div className="content-file"></div>
+                                        <div className="footer-img">
+                                            <div className="btn-orther-img">
+                                                <p>Xem tất cả</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="link-section">
+                                <div className="header-img">
+                                    <p>Link</p>
+                                    {!isCollapsedLink ? <CaretRightFilled className="icon-right" onClick={toggleCollapseLink}/> : <CaretDownFilled className="icon-right" onClick={toggleCollapseLink}/> }
+                                </div>
+                                {isCollapsedLink && (
+                                    <div className="p-4 grid grid-cols-3 gap-2">
+                                        <div className="content-link"></div>
+                                        <div className="footer-img">
+                                            <div className="btn-orther-img">
+                                                <p>Xem tất cả</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                             <div className="security-section"></div>
                             <div className="footer-info"></div>
                         </div>

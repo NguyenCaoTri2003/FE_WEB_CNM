@@ -1,11 +1,9 @@
-import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined } from "@ant-design/icons";
+import {UserAddOutlined, EllipsisOutlined} from "@ant-design/icons";
 import { faSearch} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import '../../../../assets/styles/GroupList.css';
 
-
-
-import { Dropdown, Menu, MenuProps } from "antd";
+import { Dropdown, MenuProps } from "antd";
 
 const handleMenuClick: MenuProps["onClick"] = (e) => {
     if (e.key === "leave") {

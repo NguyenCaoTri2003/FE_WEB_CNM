@@ -30,6 +30,18 @@
     margin-bottom: 0;
 }
 
+.register-steps {
+    margin-bottom: 32px;
+}
+
+.register-steps .ant-steps-item-title {
+    font-size: 14px;
+}
+
+.register-content {
+    margin-top: 24px;
+}
+
 .register-form {
     max-width: 360px;
     margin: 0 auto;
@@ -126,14 +138,27 @@
 }
 
 .register-button {
-    height: 40px;
-    border-radius: 4px;
+    height: 48px;
+    font-size: 16px;
     font-weight: 500;
+    margin-top: 8px;
+}
+
+.register-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.register-button-back-to-login {
+    height: 40px;
+    font-size: 14px;
 }
 
 .register-footer {
+    margin-top: 24px;
     text-align: center;
-    margin-top: 16px;
 }
 
 .register-footer .ant-btn-link {
