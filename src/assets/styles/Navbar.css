@@ -117,7 +117,7 @@
     width: 400px;
     margin-left: 64px;
     height: 100vh;
-    background-color: rgb(255, 119, 119);
+    background-color: rgb(255, 255, 255);
     border-right: 1px solid #e6e6e6;
     position: fixed;
 }
@@ -217,6 +217,8 @@
     height: 72px;
     background-color: rgb(255, 255, 255);
     padding: 8px 16px;
+    border-top: 1px solid #e6e6e6;
+    border-bottom: 1px solid #e6e6e6;
 }
 .user-item:hover{
     background-color: #f0f2f5;

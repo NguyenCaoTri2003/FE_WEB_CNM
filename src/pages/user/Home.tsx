@@ -164,6 +164,9 @@ const Home = () => {
     // Tải tin nhắn
     useEffect(() => {
         const token = localStorage.getItem('token');
+        // const myEmail = localStorage.getItem('email');
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const myEmail = user.email;
         const fetchMessages = async () => {
             try {
                 const response = await axios.get<GetMessagesResponse>(
@@ -178,7 +181,7 @@ const Home = () => {
                 const messages = response.data.data;
                 if (messages.length > 0) {
                     const lastMsg = messages[messages.length - 1];
-                    const isReceiver = lastMsg.senderEmail !== selectedUser.email;
+                    const isReceiver = lastMsg.senderEmail !== myEmail;
                     const friendEmail = isReceiver ? lastMsg.senderEmail : lastMsg.receiverEmail;
             
                     updateLastMessage(friendEmail, lastMsg.content, new Date(lastMsg.createdAt));
@@ -209,13 +212,13 @@ const Home = () => {
         const days = Math.floor(differenceInSeconds / 86400);
       
         if (minutes < 1) {
-          return "Just now"; // Nếu dưới 1 phút
+          return "Vừa gửi"; // Nếu dưới 1 phút
         } else if (minutes < 60) {
-          return `${minutes} minute${minutes > 1 ? "s" : ""} ago`; // Nếu dưới 1 giờ
+          return `${minutes} phút trước`; // Nếu dưới 1 giờ
         } else if (hours < 24) {
-          return `${hours} hour${hours > 1 ? "s" : ""} ago`; // Nếu dưới 1 ngày
+          return `${hours} giờ trước`; // Nếu dưới 1 ngày
         } else {
-          return `${days} day${days > 1 ? "s" : ""} ago`; // Nếu trên 1 ngày
+          return `${days} ngày trước`; // Nếu trên 1 ngày
         }
     }
 
@@ -285,6 +288,7 @@ const Home = () => {
     // Xóa tin nhắn
     const handleDeleteMessage = async (messageId?: string) => {
         const token = localStorage.getItem('token');
+        
         if (!messageId) return;
         try {
           await axios.delete(`${API_ENDPOINTS.deleteMessage(messageId)}`, {
@@ -491,12 +495,12 @@ const Home = () => {
                                 {/* thêm ảnh */}
                                 <input
                                     type="file"
-                                    id="fileInput"
+                                    id="imgInput"
                                     accept="image/*"
                                     style={{ display: 'none' }}
                                     onChange={handleFileChange}
                                 />
-                                <button onClick={() => document.getElementById('fileInput')?.click()} className="btn-file">
+                                <button onClick={() => document.getElementById('imgInput')?.click()} className="btn-file">
                                 <FontAwesomeIcon icon={faImage} />
                                 </button>
                                 
@@ -504,6 +508,7 @@ const Home = () => {
                                 <input
                                     type="file"
                                     id="fileInput"
+                                    // accept="image/*"
                                     style={{ display: 'none' }}
                                     onChange={handleFileChange}
                                 />
