@@ -173,7 +173,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    opacity: 0; /* Hide the actual image since we're just using it as a placeholder */
+    opacity: 1; 
   }
   
   .friend-name {

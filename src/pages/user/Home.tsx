@@ -5,98 +5,42 @@ import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faLaughBeam, faImage, faFileCirclePlus, faAddressCard, faUserGroup } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-modal";
-import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, LikeFilled, BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled, UserOutlined} from "@ant-design/icons";
+import { UsergroupAddOutlined, UserAddOutlined, EllipsisOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, LikeFilled, BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled, UserOutlined, SendOutlined} from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import axios from 'axios';
+import { API_ENDPOINTS } from "config/api";
 
 Modal.setAppElement("#root");
 
 interface Message {
-    id: number;
-    name: string;
-    message: string;
-    time: string;
+    messageId: string;
+    senderEmail: string;
+    receiverEmail: string;
+    content: string;
+    createdAt: string;
+    status: string;
 }
 
-const messages: Message[]  = [
-    {
-        id: 1,
-        name: "Nguyễn Văn A",
-        message: "Bạn có rảnh không. jhfgduiofjhbskjdlfdjdnskjlfjdkslfjndklfmn",
-        time: "14:30"
-    },
-    {
-        id: 2,
-        name: "Trần Thị B",
-        message: "Tối nay đi chơi nhé!",
-        time: "13:15"
-    },
-    {
-        id: 3,
-        name: "Nhóm bạn bè",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    },
-    {
-        id: 4,
-        name: "Nhóm bạn bè 4",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    },
-    {
-        id: 5,
-        name: "Nhóm bạn bè 5",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    },
-    {
-        id: 6,
-        name: "Nhóm bạn bè 6",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    },
-    {
-        id: 7,
-        name: "Nhóm bạn bè 7",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    },
-    {
-        id: 8,
-        name: "Nhóm bạn bè 8",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    },
-    {
-        id: 9,
-        name: "Nhóm bạn bè 9",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    },
-    {
-        id: 10,
-        name: "Nhóm bạn bè 10",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    },
-    {
-        id: 11,
-        name: "Nhóm bạn bè 11",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    },
-    {
-        id: 12,
-        name: "Nhóm bạn bè 12",
-        message: "Họp nhóm lúc 20:00",
-        time: "12:50"
-    }
-];
+interface SendMessageResponse {
+    success: boolean;
+    data: Message;
+}
+
+interface GetMessagesResponse {
+    success: boolean;
+    data: Message[];
+}
+
 
 const Home = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const friend = location.state;
+    
     const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<Message | null>(null);
+    // const [selectedUser, setSelectedUser] = useState<Message | null>(null);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -104,12 +48,27 @@ const Home = () => {
     const [isCollapsedFile, setIsCollapsedFile] = useState(false);
     const [isCollapsedLink, setIsCollapsedLink] = useState(false);
 
+    const [selectedUser, setSelectedUser] = useState(friend);
+
+    const [message, setMessage] = useState('');
+    const [chatMessages, setChatMessages] = useState<Message[]>([]);
+
+    //lướt xuống cùng
+    const bottomRef = useRef<HTMLDivElement>(null);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
             navigate('/login');
         }
     }, [navigate]);
+
+    useEffect(() => {
+        if (friend) {
+          setSelectedUser(friend);
+        }
+      }, [friend]);
 
     const toggleCollapse = () => {
         setIsCollapsed(!isCollapsed);
@@ -129,113 +88,119 @@ const Home = () => {
         }
     };
 
+    const scrollToBottom = () => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+    const isNearBottom = () => {
+        const el = chatContainerRef.current;
+        if (!el) return false;
+    
+        const threshold = 150; // khoảng cách tính là "gần cuối"
+        return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+    };
+    useEffect(() => {
+        if (isNearBottom()) {
+            scrollToBottom();
+        }
+    }, [chatMessages]);
+
+    // Gửi tin nhắn
+
+    const sendMessage = async () => {
+        if (!message.trim()) return;
+    
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post<SendMessageResponse>(
+                API_ENDPOINTS.sendMessage,
+                {
+                    content: message,
+                    receiverEmail: selectedUser.email
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+            scrollToBottom();
+            if (response.data.success) {
+                setChatMessages(prev => [...prev, response.data.data]); // ✅ sửa ở đây
+                setMessage('');
+            }
+        } catch (error) {
+            console.error('Lỗi khi gửi tin nhắn:', error);
+        }
+    };
+    
+    // Tải tin nhắn
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const fetchMessages = async () => {
+            try {
+                const response = await axios.get<GetMessagesResponse>(
+                    `${API_ENDPOINTS.getMessages}${selectedUser.email}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+                setChatMessages(response.data.data); 
+            } catch (error) {
+                console.error("Lỗi khi tải tin nhắn:", error);
+            }
+        };
+    
+        fetchMessages();
+        const interval = setInterval(fetchMessages, 1000); // Mỗi 3s tải lại
+        return () => clearInterval(interval);
+    }, [selectedUser]);
+
+    function timeAgo(createdAt: string | Date): string {
+        const now = new Date();
+        const messageDate = new Date(createdAt);
+      
+        // Kiểm tra nếu createdAt không phải là một giá trị hợp lệ
+        if (isNaN(messageDate.getTime())) {
+          return "Invalid date";
+        }
+      
+        const differenceInSeconds = Math.floor((now.getTime() - messageDate.getTime()) / 1000);
+      
+        const minutes = Math.floor(differenceInSeconds / 60);
+        const hours = Math.floor(differenceInSeconds / 3600);
+        const days = Math.floor(differenceInSeconds / 86400);
+      
+        if (minutes < 1) {
+          return "Just now"; // Nếu dưới 1 phút
+        } else if (minutes < 60) {
+          return `${minutes} minute${minutes > 1 ? "s" : ""} ago`; // Nếu dưới 1 giờ
+        } else if (hours < 24) {
+          return `${hours} hour${hours > 1 ? "s" : ""} ago`; // Nếu dưới 1 ngày
+        } else {
+          return `${days} day${days > 1 ? "s" : ""} ago`; // Nếu trên 1 ngày
+        }
+    }
+
+    
+   
+
     return (
         <div className="home-container">
-            {/* <div className="left-section">
-                <div className="search-section">
-                    <div className="search-input">
-                        <FontAwesomeIcon icon={faSearch} />
-                        <input type="text" placeholder="Tìm kiếm" />
-                    </div>
-                    <div className="icon-section">
-                        <UserAddOutlined className="icon-adduser"/>
-                        <UsergroupAddOutlined className="icon-addgroup"/>
-                    </div>         
-                </div>
-                <div className="user-chat-section">
-                    <div className="category-menu">
-                        <div className="btn-section">
-                            <button className="btn-prioritize active">Ưu tiên</button>
-                            <button className="btn-other">Khác</button>
-                        </div>
-                        <div className="other-section">
-                            <div className="classify">
-                                <select name="" id="select" className="form-select">
-                                    <option value="1">Phân loại</option>
-                                    <option value="2">Nhóm</option>
-                                    <option value="3">Cá nhân</option>
-                                </select>
-                            </div>
-                            <EllipsisOutlined className="btn-ellip" />
-                        </div>
-                    </div>
-                    <div className="list-mess">
-                        {messages.map((msg) => (
-                            <div 
-                                key={msg.id} 
-                                className={`message-item ${selectedUser?.id === msg.id ? "selected" : ""}`}
-                                onMouseEnter={() => setHoveredMessageId(msg.id)}
-                                onMouseLeave={() => setHoveredMessageId(null)}
-                                onClick={() => setSelectedUser(msg)}
-                            >
-                                <div className="avatar-icon">
-                                    <UserOutlined />
-                                </div>
-                                <div className="message-content">
-                                    <div className="message-header">
-                                        <span className="message-name">{msg.name}</span>
-                                        <span 
-                                            className="message-time" 
-                                            onClick={(e) => {
-                                                setSelectedUser(msg);
-                                                setIsModalOpen(true);
-                                                const rect = e.currentTarget.getBoundingClientRect();
-                                                const windowHeight = window.innerHeight;
-                                                const modalHeight = 100;
-                                                const topPosition = (rect.bottom + modalHeight > windowHeight -200)
-                                                    ? rect.top - modalHeight - 10
-                                                    : rect.bottom + 5;
-                                                setModalPosition({
-                                                    top: topPosition,
-                                                    left: rect.left
-                                                });
-                                            }}
-                                        >
-                                            {hoveredMessageId === msg.id ? <MoreOutlined /> : msg.time}
-                                        </span>
-                                    </div>
-                                    <div className="message-text">{msg.message}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <Modal
-                        isOpen={isModalOpen}
-                        onRequestClose={() => setIsModalOpen(false)}
-                        className="custom-modal"
-                        overlayClassName="overlay"
-                        style={{
-                            content: {
-                                top: `${modalPosition.top}px`,
-                                left: `${modalPosition.left}px`,
-                                transform: "translateY(0)",
-                                position: "absolute",
-                                width: "200px",
-                                backgroundColor: "white",
-                                border: "1px solid #ccc",
-                                padding: "10px",
-                                borderRadius: "5px"
-                            }
-                        }}
-                    >
-                        <h3>Tùy chọn tin nhắn</h3>
-                        <button onClick={() => console.log("Sao chép")}>Sao chép tin nhắn</button>
-                        <button onClick={() => console.log("Xóa")}>Xóa tin nhắn</button>
-                        <button onClick={() => console.log("Báo cáo")}>Báo cáo tin nhắn</button>
-                        <button onClick={() => setIsModalOpen(false)}>Đóng</button>
-                    </Modal>
-                </div>
-            </div> */}
             <div className="right-section">
                 {selectedUser ? (
                     <div className={`body-chat ${isSidebarOpen ? "shrink" : ""}`}>
                         <div className="header-chat">
                             <div className="info-chat">
                                 <div className="avatar-icon">
-                                    <UserOutlined />
+                                    <img
+                                        src={friend.avatar || "https://cdn.pixabay.com/photo/2025/03/18/17/03/dog-9478487_1280.jpg"}
+                                        alt={friend.fullName}
+                                    />
                                 </div>
                                 <div className="title-chat">
-                                    <span className="title-name">{selectedUser.name}</span>
+                                    <span className="title-name">{selectedUser.fullName}</span>
                                     <span className="title-status">Đang hoạt động</span>
                                 </div>
                             </div>
@@ -245,8 +210,17 @@ const Home = () => {
                                 <MenuFoldOutlined className="icon-menufold" onClick={() => setIsSidebarOpen(!isSidebarOpen)} />
                             </div>
                         </div>
-                        <div className="content-chat">
-                            
+                        <div className="content-chat"  ref={chatContainerRef}>
+                            {chatMessages.map((msg) => (
+                                <div
+                                key={msg.messageId}
+                                className={`message-item-chat ${msg.senderEmail === selectedUser.email ? 'received' : 'sent'}`}
+                                >
+                                <div className="message-content">{msg.content}</div>
+                                <div className="message-time">{timeAgo(msg.createdAt)}</div>
+                                </div>
+                            ))}
+                            <div ref={bottomRef} />
                         </div>
                         <div className="footer-chat">
                             <div className="menu-section-chat">
@@ -260,11 +234,20 @@ const Home = () => {
                                     ref={textAreaRef}
                                     className="chat-input"
                                     placeholder="Nhập tin nhắn..." 
+                                    // onInput={handleInput}
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
                                     onInput={handleInput}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        sendMessage();
+                                        }
+                                    }}
                                 ></textarea>
                                 <div className="menu-button">
                                     <FontAwesomeIcon icon={faLaughBeam} />
-                                    <LikeFilled className="icon-menufold"/>
+                                    <SendOutlined className="icon-menufold" onClick={sendMessage}/>
                                 </div>
                             </div>
                         </div>
@@ -272,6 +255,8 @@ const Home = () => {
                 ) : (
                     <h2>Chọn một cuộc trò chuyện</h2>
                 )}
+
+                {/* Sidebar thông tin người dùng */}
                 {isSidebarOpen && (
                     <div className="sidebar-chat">
                         <div className="sidebar-header">

@@ -15,10 +15,18 @@ export const API_ENDPOINTS = {
     uploadAvatar: `${API_BASE_URL}/upload-avatar`,
     updatePassword: `${API_BASE_URL}/update-password`,
     profileweb: `${API_BASE_URL}/profileweb`,
+
+    //add friend
     search: `${API_BASE_URL}/search`,
     sendFriendRequest: `${API_BASE_URL}/friend-request/send`,
     responđFriendRequest: `${API_BASE_URL}/friend-request/respond`,
     withdrawFriendRequest: `${API_BASE_URL}/friend-request/withdraw`,
     friendRequest: `${API_BASE_URL}/friend-requests`,
     getFriends: `${API_BASE_URL}/friends`,
+
+    //send message
+    sendMessage: `${API_BASE_URL}/messages/send`,
+    getMessages: `${API_BASE_URL}/messages/conversation/`,
+    markAsRead: (messageId: string) => `${API_BASE_URL}/read/${messageId}`,
+
 }; 

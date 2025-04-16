@@ -42,6 +42,17 @@ interface Message {
     time: string;
 }
 
+interface Friend {
+    email: string;
+    fullName: string;
+    avatar: string; // optional
+}
+
+interface FriendResponse {
+    success: boolean;
+    data: Friend[];
+}
+
 const messages: Message[]  = [
     {
         id: 1,
@@ -67,8 +78,13 @@ const Navbar = () => {
     const [selectedUserSearch, setSelectedUserSearch] = useState<any>(null);
     const [isModalOpenUser, setIsModalOpenUser] = useState(false);
 
-    const [selectedUser, setSelectedUser] = useState<Message | null>(null);
-    const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
+    // const [selectedUser, setSelectedUser] = useState<Message | null>(null);
+    // const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
+    // const [isModalOpen, setIsModalOpen] = useState(false);
+    // const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
+
+    const [selectedUser, setSelectedUser] = useState<Friend | null>(null);
+    const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     
@@ -76,6 +92,8 @@ const Navbar = () => {
     const [showContacts, setShowContacts] = useState(false);
 
     const [hasSentRequest, setHasSentRequest] = useState<boolean>(false);
+
+    const [friends, setFriends] = useState<Friend[]>([]);
 
 
     useEffect(() => {
@@ -311,6 +329,36 @@ const Navbar = () => {
           console.log("Lỗi khi thu hồi lời mời");
         }
       };
+    
+    useEffect(() => {
+        const fetchFriends = async () => {
+          try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+              console.error("Người dùng chưa đăng nhập hoặc token không hợp lệ");
+              return;
+            }
+    
+            const response = await axios.get<FriendResponse>(`${API_ENDPOINTS.getFriends}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+    
+            if (response.data.success) {
+              setFriends(response.data.data);
+            } else {
+              console.error("Lỗi khi lấy danh sách bạn bè");
+            }
+          } catch (error) {
+            console.error("Lỗi khi gọi API:", error);
+          } finally {
+            // setLoading(false);
+          }
+        };
+    
+        fetchFriends();
+      }, []);
   
 
   return (
@@ -472,24 +520,30 @@ const Navbar = () => {
                                 </div>
                             </div>
                             <div className="list-mess">
-                                {messages.map((msg) => (
+                                {friends.map((friend) => (
                                     <div 
-                                        key={msg.id} 
-                                        className={`message-item ${selectedUser?.id === msg.id ? "selected" : ""}`}
-                                        onMouseEnter={() => setHoveredMessageId(msg.id)}
+                                        key={friend.email} 
+                                        className={`message-item ${selectedUser?.email === friend.email ? "selected" : ""}`}
+                                        onMouseEnter={() => setHoveredMessageId(friend.email)}
                                         onMouseLeave={() => setHoveredMessageId(null)}
-                                        onClick={() => setSelectedUser(msg)}
+                                        onClick={() => {
+                                            setSelectedUser(friend);
+                                            navigate("/user/home", { state: friend });
+                                        }}
                                     >
                                         <div className="avatar-icon">
-                                            <UserOutlined />
+                                        <img
+                                            src={friend.avatar || "https://cdn.pixabay.com/photo/2025/03/18/17/03/dog-9478487_1280.jpg"}
+                                            alt={friend.fullName}
+                                        />
                                         </div>
                                         <div className="message-content">
                                             <div className="message-header">
-                                                <span className="message-name">{msg.name}</span>
+                                                <span className="message-name">{friend.fullName}</span>
                                                 <span 
                                                     className="message-time" 
                                                     onClick={(e) => {
-                                                        setSelectedUser(msg);
+                                                        setSelectedUser(friend);
                                                         setIsModalOpen(true);
                                                         const rect = e.currentTarget.getBoundingClientRect();
                                                         const windowHeight = window.innerHeight;
@@ -503,10 +557,10 @@ const Navbar = () => {
                                                         });
                                                     }}
                                                 >
-                                                    {hoveredMessageId === msg.id ? <MoreOutlined /> : msg.time}
+                                                    {hoveredMessageId === friend.email ? <MoreOutlined /> : "..."}
                                                 </span>
                                             </div>
-                                            <div className="message-text">{msg.message}</div>
+                                            <div className="message-text">Chưa có</div>
                                         </div>
                                     </div>
                                 ))}
@@ -572,12 +626,6 @@ const Navbar = () => {
             {selectedUserSearch && (
                 <Modal isOpen={isModalOpenUser} onRequestClose={handleCloseModal} className="user-modal" overlayClassName="overlay">
                     <div className="modal-content">
-                        {/* <h2>Thông tin người dùng</h2>
-                        <img src={selectedUserSearch.avatar} alt="Avatar" style={{ width: 100, borderRadius: '50%' }} />
-                        <p><strong>Tên:</strong> {selectedUserSearch.fullName}</p>
-                        <p><strong>Email:</strong> {selectedUserSearch.email}</p>
-                        <p><strong>SĐT:</strong> {selectedUserSearch.phoneNumber}</p>
-                        <button onClick={handleCloseModal}>Đóng</button> */}
                         <div className="title-modal">
                             <p>Thông tin tài khoản</p>
                             <CloseOutlined className="icon-close-modal-user" onClick={handleCloseModal}/>

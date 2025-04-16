@@ -90,8 +90,8 @@ const FriendList = () => {
         </div>
 
         <div className="friend-list">
-          {friends.map((friend, index) => (
-            <div key={index} className="friend-group">
+          {friends.map((friend) => (
+            <div key={friend.email} className="friend-group">
               <div className="friend-item">
                 <div className="friend-info">
                   <div

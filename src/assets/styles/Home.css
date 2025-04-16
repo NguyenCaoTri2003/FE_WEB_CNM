@@ -14,6 +14,7 @@
     flex-direction: column;
     border-right: 1px solid #e0e0e0;
     background-color: #fff;
+    
 }
 
 .search-section {
@@ -385,6 +386,7 @@
     background-color: #6fd4ff; 
     height: 100vh;
     width: 100%;
+    margin-left: 400px;
 }
 /* .right-section {
     display: flex;
@@ -936,3 +938,82 @@
 .search-section {
     position: relative;
 }
+/* .message-item-chat {
+    margin: 8px 0;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 60%;
+  }
+.sent {
+    display: flex;
+    align-self: flex-end;
+    background-color: #dbebff;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 12px;
+}
+.received {
+    align-self: flex-start;
+    background-color: #f1f0f0;
+}
+.message-content{
+    word-wrap: break-word;
+    font-size: .9375rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #000000;
+} */
+.content-chat {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+  } 
+  
+  /* Container của từng tin nhắn */
+  .message-item-chat {
+    display: flex;
+    flex-direction: column;
+    max-width: 40%;
+    word-wrap: break-word;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: .9rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #000000;
+    position: relative;
+  }
+  
+  /* Tin nhắn gửi (nằm bên phải) */
+  .sent {
+    align-self: flex-end;
+    background-color: #dbebff; /* Màu xanh nhẹ kiểu Messenger/WhatsApp */
+    text-align: right;
+    border: 1px solid #d1d1d1;
+    border-radius: 6px;
+    padding: 12px;
+  }
+  
+  /* Tin nhắn nhận (nằm bên trái) */
+  .received {
+    align-self: flex-start;
+    background-color: #ffffff; /* Màu xám nhạt */
+    text-align: left;
+    border: 1px solid #d1d1d1;
+    border-radius: 6px;
+    padding: 12px;
+  }
+  
+  /* Nội dung tin nhắn */
+  .message-content {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  
+  /* Thời gian gửi */
+  .message-time {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+  }
