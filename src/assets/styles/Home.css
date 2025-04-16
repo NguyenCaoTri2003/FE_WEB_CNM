@@ -535,6 +535,7 @@
     resize: none; 
     overflow-wrap: break-word;
     word-break: break-word;
+    color: #000000;
 }
 
 .body-chat.shrink {
@@ -983,6 +984,7 @@
     line-height: 1.5;
     color: #000000;
     position: relative;
+    
   }
   
   /* Tin nhắn gửi (nằm bên phải) */
@@ -1017,3 +1019,43 @@
     color: #888;
     margin-top: 4px;
   }
+  .file-chat{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .file-name{
+    overflow-wrap: break-word;
+    max-width: 60%;
+    text-align: left;
+  }
+  .file-icon svg{
+    width: 38px;
+    height: 48px;
+  }
+  .file-download{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background-color: #f0f2f5;
+    border-radius: 8px;
+    color: #000000;
+  }
+  .file-chat-icon{
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+  .message-options {
+    z-index: 999;
+    background: white;
+    padding: 4px;
+    border-radius: 4px;
+}
+.btn-file{
+    border: none;
+    background: transparent;
+}

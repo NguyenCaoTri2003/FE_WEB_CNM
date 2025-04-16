@@ -35,11 +35,14 @@ import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import AppRoutes from './routes/routes'; 
 import './App.css';
+import { MessagesContext } from './context/MessagesContext';
 
 const App: React.FC = () => {
   return (
     <Router>
-      <AppRoutes />
+      <MessagesContext>
+        <AppRoutes />
+      </MessagesContext>
     </Router>
   );
 };

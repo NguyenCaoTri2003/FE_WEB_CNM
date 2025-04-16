@@ -27,6 +27,12 @@ export const API_ENDPOINTS = {
     //send message
     sendMessage: `${API_BASE_URL}/messages/send`,
     getMessages: `${API_BASE_URL}/messages/conversation/`,
-    markAsRead: (messageId: string) => `${API_BASE_URL}/read/${messageId}`,
+    markAsRead: (messageId: string) => `${API_BASE_URL}/messages/read/${messageId}`,
+    recall: (messageId: string) => `${API_BASE_URL}/messages/recall/${messageId}`,
+    deleteMessage: (messageId: string) => `${API_BASE_URL}/messages/delete/${messageId}`,
+
+    //upload file
+    uploadFile: `${API_BASE_URL}/files/upload`,
+    getFile: (fileName: string) => `${API_BASE_URL}/files/${fileName}`,
 
 }; 

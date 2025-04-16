@@ -8,6 +8,7 @@ import { API_ENDPOINTS } from '../config/api';
 import { UserOutlined, SettingOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined, UsergroupAddOutlined, UserAddOutlined, CloseOutlined, EllipsisOutlined, MoreOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Modal from "react-modal";
+import { useMessageContext } from "../context/MessagesContext";
 
 // Định nghĩa interface cho dữ liệu user
 interface UserProfile {
@@ -53,21 +54,6 @@ interface FriendResponse {
     data: Friend[];
 }
 
-const messages: Message[]  = [
-    {
-        id: 1,
-        name: "Nguyễn Văn A",
-        message: "Bạn có rảnh không. jhfgduiofjhbskjdlfdjdnskjlfjdkslfjndklfmn",
-        time: "14:30"
-    },
-    {
-        id: 2,
-        name: "Trần Thị B",
-        message: "Tối nay đi chơi nhé!",
-        time: "13:15"
-    }
-];
-
 const Navbar = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState<UserProfile | null>(null);
@@ -95,6 +81,10 @@ const Navbar = () => {
 
     const [friends, setFriends] = useState<Friend[]>([]);
 
+    const { lastMessages, updateLastMessage } = useMessageContext()!;
+    // const displayLastMessageTime = lastMessageTime ? lastMessageTime.toString().slice(0, 10) : 'Chưa có tin nhắn';
+    const [storedMessage, setStoredMessage] = useState<{ message: string, time: Date } | null>(null);
+    console.log("LastMessages context:", lastMessages);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -359,7 +349,35 @@ const Navbar = () => {
     
         fetchFriends();
       }, []);
+
+      
+    useEffect(() => {
+        // Lấy tin nhắn cuối từ localStorage khi component mount
+        const stored = localStorage.getItem('lastMessage');
+        if (stored) {
+            setStoredMessage(JSON.parse(stored));
+        }
+    }, []);
   
+    // const renderMessageContent = (message: string | null) => {
+    //     if (!message) return 'Chưa có tin nhắn';
+
+    //     if (message.endsWith('.jpg') || message.endsWith('.jpeg') || message.endsWith('.png')) {
+    //         return (
+    //             <>
+    //                 🖼️ {message.split('/').pop()}
+    //             </>
+    //         );
+    //     } else if (message.endsWith('.pdf') || message.endsWith('.docx') || message.endsWith('.zip')) {
+    //         return (
+    //             <>
+    //                 📎 {message.split('/').pop()}
+    //             </>
+    //         );
+    //     } else {
+    //         return message;
+    //     }
+    // };
 
   return (
     <div className="container-main">
@@ -520,15 +538,31 @@ const Navbar = () => {
                                 </div>
                             </div>
                             <div className="list-mess">
-                                {friends.map((friend) => (
-                                    <div 
-                                        key={friend.email} 
-                                        className={`message-item ${selectedUser?.email === friend.email ? "selected" : ""}`}
-                                        onMouseEnter={() => setHoveredMessageId(friend.email)}
-                                        onMouseLeave={() => setHoveredMessageId(null)}
-                                        onClick={() => {
-                                            setSelectedUser(friend);
-                                            navigate("/user/home", { state: friend });
+                                {friends.map((friend) => {
+                                    const last = lastMessages[friend.email];
+                                    const isImage = last?.message?.startsWith("http") && /\.(jpg|jpeg|png|gif)$/i.test(last.message);
+                                    const isFile = last?.message?.startsWith("http") && !isImage;
+                                    
+
+                                    const messageLabel = isImage
+                                        ? "🖼️ Hình ảnh"
+                                        : isFile
+                                        ? "📎 Tệp tin"
+                                        : last?.message || "Chưa có tin nhắn";
+
+                                    const displayTime = last?.time
+                                        ? new Date(last.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                        : "";
+
+                                    return (
+                                        <div 
+                                            key={friend.email} 
+                                            className={`message-item ${selectedUser?.email === friend.email ? "selected" : ""}`}
+                                            onMouseEnter={() => setHoveredMessageId(friend.email)}
+                                            onMouseLeave={() => setHoveredMessageId(null)}
+                                            onClick={() => {
+                                                setSelectedUser(friend);
+                                                navigate("/user/home", { state: friend });
                                         }}
                                     >
                                         <div className="avatar-icon">
@@ -557,13 +591,17 @@ const Navbar = () => {
                                                         });
                                                     }}
                                                 >
-                                                    {hoveredMessageId === friend.email ? <MoreOutlined /> : "..."}
+                                                    {hoveredMessageId === friend.email ? <MoreOutlined /> : displayTime}
                                                 </span>
                                             </div>
-                                            <div className="message-text">Chưa có</div>
+                                            <div className="message-text">
+                                                {messageLabel}
+                                            </div>
                                         </div>
                                     </div>
-                                ))}
+                                    )
+                                    
+                                })}
                             </div>
                             <Modal
                                 isOpen={isModalOpen}
