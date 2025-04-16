@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { Input, Button, message } from "antd";
@@ -12,10 +12,18 @@ interface SearchResult {
   avatar: string;
 }
 
+interface SentRequest {
+  email: string;
+  fullName: string;
+  avatar: string;
+  status: string;
+}
+
 // Interface cho response từ API
 interface ApiResponse<T> {
   success: boolean;
   message?: string;
+  data?: T;
   user?: T;
 }
 
@@ -25,6 +33,32 @@ const AddFriend = () => {
   const [searchResult, setSearchResult] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [sentRequests, setSentRequests] = useState<SentRequest[]>([]);
+
+  // Fetch sent friend requests
+  useEffect(() => {
+    const fetchSentRequests = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await axios.get<ApiResponse<{ sent: SentRequest[] }>>('/api/friend-requests', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.data.success && response.data.data) {
+          setSentRequests(response.data.data.sent);
+        }
+      } catch (error) {
+        console.error('Error fetching sent requests:', error);
+      }
+    };
+
+    fetchSentRequests();
+  }, []);
 
   const searchUserByPhoneNumber = async (phoneNumber: string): Promise<SearchResult> => {
     try {
@@ -152,6 +186,28 @@ const AddFriend = () => {
           >
             {loading ? 'Đang gửi...' : 'Thêm bạn'}
           </Button>
+        </div>
+      )}
+
+      {/* Sent Requests Section */}
+      {sentRequests.length > 0 && (
+        <div className="sent-requests-section">
+          <h3 className="section-title">Lời mời đã gửi</h3>
+          <div className="sent-requests-list">
+            {sentRequests.map((request) => (
+              <div key={request.email} className="sent-request-item">
+                <img 
+                  src={request.avatar} 
+                  alt={request.fullName} 
+                  className="avatar"
+                />
+                <div className="request-info">
+                  <h4>{request.fullName}</h4>
+                  <p className="request-status">{request.status}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

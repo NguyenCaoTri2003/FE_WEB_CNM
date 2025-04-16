@@ -1,75 +1,207 @@
-.container-friend-invitation{
+.container-friend-invitation {
     margin-left: 464px;
-}
-.title-friend-inv{
-    height: 49px;
-    width: 100%;
-    padding: 8px 16px;
-    border-bottom: 1px solid #e6e6e6;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-
-}
-.title-friend-inv p{
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 500;
-    line-height: 1.5;
-}
-.title-friend-inv svg{
-    font-size: 1.5rem;
-    font-weight: 400;
-    color: black;
-}
-.list-friend-inv{
-    display: flex;
-    flex-direction: row;
-    gap: 16px;
     padding: 20px;
-    flex-wrap: wrap;
+    background-color: #f0f2f5;
+    min-height: 100vh;
 }
-.avatar-friend-invitation{
-    width: 80px;
-    height: 80px;
-    min-width: 80px;
-    min-height: 80px;
-    border-radius: 50%;
-    border: 2px solid #d1d1d1;
-    object-fit: cover;
-}
-.friend-invitation-item{
-    width: 20%;
-    height: 200px;
-    background-color: rgb(238, 255, 249);
+
+.title-friend-inv {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    border: 2px solid #d1d1d1;
-    border-radius: 20px;
+    gap: 10px;
+    margin-bottom: 24px;
+    padding: 12px 16px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
-.friend-invitation-btn{
-    width: 100%;
+
+.icon-adduser {
+    font-size: 24px;
+    color: #1b74e4;
+}
+
+.title-friend-inv p {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+    color: #050505;
+}
+
+.section-title {
+    margin: 20px 0 16px 0;
+    padding: 0 10px;
+}
+
+.section-title h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #65676b;
+    margin: 0;
     display: flex;
+    align-items: center;
+}
+
+.section-title h3::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: #ced0d4;
+    margin-left: 15px;
+}
+
+.list-friend-inv {
+    background-color: white;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.list-friend-inv p {
+    text-align: center;
+    color: #65676b;
+    margin: 20px 0;
+    font-size: 15px;
+}
+
+.friend-invitation-item {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    padding: 0px 20px;
+    padding: 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    margin-bottom: 8px;
 }
-.btn-accept{
-    height: 32px;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    background-color: #daebff;
-    color: #0045ad;
-    border: none;
+
+.friend-invitation-item:last-child {
+    margin-bottom: 0;
 }
-.btn-decline{
-    height: 32px;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    background-color: #ffdada;
-    color: #ad0000;
+
+.friend-invitation-item:hover {
+    background-color: #f2f3f5;
+}
+
+.friend-invitation-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.avatar-friend-invitation {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #dddfe2;
+}
+
+.name-friend-invitation {
+    font-size: 15px;
+    font-weight: 500;
+    margin: 0;
+    color: #050505;
+}
+
+.friend-invitation-btn {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-accept {
+    padding: 8px 16px;
+    background-color: #1b74e4;
+    color: white;
     border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    min-width: 100px;
+}
+
+.btn-accept:hover {
+    background-color: #1967d2;
+}
+
+.btn-decline {
+    padding: 8px 16px;
+    background-color: #e4e6eb;
+    color: #050505;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    min-width: 100px;
+}
+
+.btn-decline:hover {
+    background-color: #d8dadf;
+}
+
+/* Loading state */
+.list-friend-inv p.loading {
+    color: #1b74e4;
+    font-weight: 500;
+}
+
+/* Empty state */
+.list-friend-inv p.empty-state {
+    color: #65676b;
+    font-weight: normal;
+}
+
+/* Responsive */
+@media screen and (max-width: 1200px) {
+    .container-friend-invitation {
+        margin-left: 360px;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    .container-friend-invitation {
+        margin-left: 280px;
+    }
+    
+    .friend-invitation-item {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 12px;
+    }
+    
+    .friend-invitation-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .container-friend-invitation {
+        margin-left: 0;
+        padding: 16px;
+    }
+    
+    .title-friend-inv {
+        margin-bottom: 16px;
+    }
+    
+    .title-friend-inv p {
+        font-size: 18px;
+    }
+    
+    .avatar-friend-invitation {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .btn-accept,
+    .btn-decline {
+        min-width: 80px;
+        padding: 6px 12px;
+    }
 }

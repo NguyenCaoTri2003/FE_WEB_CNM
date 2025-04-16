@@ -15,22 +15,25 @@ interface FriendRequest {
     email: string;
     fullName: string;
     avatar: string;
+    status?: string;
 }
   
 interface FriendRequestResponse {
     success: boolean;
     data: {
         received: FriendRequest[];
+        sent: FriendRequest[];
     };
 }
 
 interface FriendRequestResponses {
     success: boolean;
     message: string;
-  }
+}
 
 const FriendInvitation: React.FC = () => {
     const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
+    const [sentRequests, setSentRequests] = useState<FriendRequest[]>([]);
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<FriendRequest | null>(null);
@@ -40,7 +43,7 @@ const FriendInvitation: React.FC = () => {
         const fetchFriendRequests = async () => {
           setLoading(true);
           try {
-            const token = localStorage.getItem('token'); // Lấy token từ localStorage
+            const token = localStorage.getItem('token');
             if (!token) {
               console.error('Người dùng chưa đăng nhập hoặc token không hợp lệ');
               return;
@@ -48,17 +51,18 @@ const FriendInvitation: React.FC = () => {
     
             const response = await axios.get<FriendRequestResponse>(API_ENDPOINTS.friendRequest, {
               headers: {
-                Authorization: `Bearer ${token}` // Gửi token qua header
+                Authorization: `Bearer ${token}`
               }
             });
     
             if (response.data.success) {
               setFriendRequests(response.data.data.received);
+              setSentRequests(response.data.data.sent);
             } else {
-              console.error('Lỗi khi lấy danh sách lời mời kết bạn');
+              console.error('Không thể tải danh sách lời mời kết bạn');
             }
           } catch (err) {
-            console.error('Lỗi khi gọi API:', err);
+            console.error('Đã xảy ra lỗi khi tải danh sách lời mời:', err);
           }
           setLoading(false);
         };
@@ -68,7 +72,7 @@ const FriendInvitation: React.FC = () => {
     
     const handleRespondToRequest = async (senderEmail: string, accept: boolean) => {
         try {
-            const token = localStorage.getItem('token'); // Lấy token từ localStorage
+            const token = localStorage.getItem('token');
             if (!token) {
                 console.error('Người dùng chưa đăng nhập hoặc token không hợp lệ');
                 return;
@@ -78,24 +82,48 @@ const FriendInvitation: React.FC = () => {
                 accept,
               }, {
                 headers: {
-                  Authorization: `Bearer ${token}`, // Đảm bảo gửi đúng token ở đây
+                  Authorization: `Bearer ${token}`,
                 }
             });
       
           if (response.data.success) {
-            // Cập nhật danh sách lời mời kết bạn sau khi phản hồi
             setFriendRequests(prevRequests => 
                 prevRequests.filter(request => request.email !== senderEmail)
-              );
+            );
           }
         } catch (error) {
-          console.error("Lỗi phản hồi lời mời kết bạn:", error);
-          alert("Đã xảy ra lỗi. Vui lòng thử lại.");
+          console.error("Không thể phản hồi lời mời kết bạn:", error);
+          alert("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
         }
     };
 
-    
-    console.log(friendRequests);
+    const handleCancelRequest = async (receiverEmail: string) => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error('Người dùng chưa đăng nhập hoặc token không hợp lệ');
+                return;
+            }
+            const response = await axios.post<FriendRequestResponses>(
+                API_ENDPOINTS.withdrawFriendRequest,
+                { receiverEmail },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (response.data.success) {
+                setSentRequests(prevRequests =>
+                    prevRequests.filter(request => request.email !== receiverEmail)
+                );
+            }
+        } catch (error) {
+            console.error("Không thể hủy lời mời kết bạn:", error);
+            alert("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
+        }
+    };
 
   return (
     <div className="container-friend-invitation">
@@ -103,36 +131,76 @@ const FriendInvitation: React.FC = () => {
         <UserAddOutlined className="icon-adduser" />
         <p>Lời mời kết bạn</p>
       </div>
+
+      {/* Received Requests Section */}
+      <div className="section-title">
+        <h3>Lời mời đã nhận ({friendRequests.length})</h3>
+      </div>
       <div className="list-friend-inv">
-        {friendRequests.length === 0 ? (
-            <p>Không có lời mời kết bạn nào</p>
+        {loading ? (
+          <p>Đang tải...</p>
+        ) : friendRequests.length === 0 ? (
+          <p>Bạn không có lời mời kết bạn nào</p>
         ) : (
-            friendRequests.map((request) => (
+          friendRequests.map((request) => (
             <div className="friend-invitation-item" key={request.email}>
-                <div className="friend-invitation-info">
+              <div className="friend-invitation-info">
                 <img
-                    src={request.avatar || "https://via.placeholder.com/50"}
-                    alt="Avatar"
-                    className="avatar-friend-invitation"
+                  src={request.avatar || "https://via.placeholder.com/50"}
+                  alt="Ảnh đại diện"
+                  className="avatar-friend-invitation"
                 />
                 <p className="name-friend-invitation">{request.fullName}</p>
-                </div>
-                <div className="friend-invitation-btn">
+              </div>
+              <div className="friend-invitation-btn">
                 <button
-                    className="btn-accept"
-                    onClick={() => handleRespondToRequest(request.email, true)}
+                  className="btn-accept"
+                  onClick={() => handleRespondToRequest(request.email, true)}
                 >
-                    Chấp nhận
+                  Chấp nhận
                 </button>
                 <button
-                    className="btn-decline"
-                    onClick={() => handleRespondToRequest(request.email, false)}
+                  className="btn-decline"
+                  onClick={() => handleRespondToRequest(request.email, false)}
                 >
-                    Từ chối
+                  Từ chối
                 </button>
-                </div>
+              </div>
             </div>
-            ))
+          ))
+        )}
+      </div>
+
+      {/* Sent Requests Section */}
+      <div className="section-title">
+        <h3>Lời mời đã gửi ({sentRequests.length})</h3>
+      </div>
+      <div className="list-friend-inv">
+        {loading ? (
+          <p>Đang tải...</p>
+        ) : sentRequests.length === 0 ? (
+          <p>Bạn chưa gửi lời mời kết bạn nào</p>
+        ) : (
+          sentRequests.map((request) => (
+            <div className="friend-invitation-item" key={request.email}>
+              <div className="friend-invitation-info">
+                <img
+                  src={request.avatar || "https://via.placeholder.com/50"}
+                  alt="Ảnh đại diện"
+                  className="avatar-friend-invitation"
+                />
+                <p className="name-friend-invitation">{request.fullName}</p>
+              </div>
+              <div className="friend-invitation-btn">
+                <button
+                  className="btn-decline"
+                  onClick={() => handleCancelRequest(request.email)}
+                >
+                  Hủy lời mời
+                </button>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>

@@ -1,25 +1,25 @@
-import { Search, ChevronDown, MoreHorizontal, User } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, ChevronDown, MoreHorizontal } from "lucide-react";
 import "../../../../assets/styles/FriendList.css";
-import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "config/api";
 import axios from "axios";
-import React, { useState, useEffect } from "react";
-
 
 interface Friend {
-    email: string;
-    fullName: string;
-    avatar: string; // optional
+  email: string;
+  fullName: string;
+  avatar: string; // optional
 }
 
 interface FriendResponse {
-    success: boolean;
-    data: Friend[];
+  success: boolean;
+  data: Friend[];
 }
 
 const FriendList = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeFriend, setActiveFriend] = useState<string | null>(null); // Track active friend email
+  const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null); // Track popup position
 
   // Fetch friend list from API
   useEffect(() => {
@@ -51,6 +51,29 @@ const FriendList = () => {
 
     fetchFriends();
   }, []);
+
+  const toggleFriendInfo = (email: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect(); // Get button position
+    const popupWidth = 200; // Width of the popup (adjust based on your CSS)
+    const popupHeight = 150; // Height of the popup (adjust based on your CSS)
+
+    // Calculate initial position
+    let top = rect.bottom + window.scrollY;
+    let left = rect.left + window.scrollX;
+
+    // Adjust position if popup goes out of viewport
+    if (left + popupWidth > window.innerWidth) {
+      left = window.innerWidth - popupWidth - 10; // Adjust to fit within the viewport
+    }
+    if (top + popupHeight > window.innerHeight) {
+      top = rect.top + window.scrollY - popupHeight - 10; // Show above the button if it overflows
+    }
+
+    setActiveFriend((prev) => (prev === email ? null : email));
+    setPopupPosition((prev) =>
+      prev && activeFriend === email ? null : { top, left }
+    );
+  };
 
   if (loading) {
     return <div>Loading...</div>;
@@ -106,13 +129,36 @@ const FriendList = () => {
                   </div>
                   <span className="friend-name">{friend.fullName}</span>
                 </div>
-                <button className="more-button">
+                <button
+                  className="more-button"
+                  onClick={(event) => toggleFriendInfo(friend.email, event)}
+                >
                   <MoreHorizontal className="more-icon" />
                 </button>
               </div>
             </div>
           ))}
         </div>
+
+        {activeFriend && popupPosition && (
+          <div
+            className="friend-info-popup"
+            style={{
+              position: "absolute",
+              top: popupPosition.top,
+              left: popupPosition.left,
+              zIndex: 1000,
+            }}
+          >
+            <ul>
+              <li>Xem thông tin</li>
+              <li>Phân loại</li>
+              <li>Đặt tên gợi nhớ</li>
+              <li>Chặn người này</li>
+              <li className="delete-friend">Xóa bạn</li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
