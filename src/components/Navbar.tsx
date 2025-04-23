@@ -695,7 +695,14 @@ const Navbar = () => {
                                     return (
                                         <div 
                                             key={item.email} 
-                                            className={`message-item ${selectedItem?.email === item.email ? "selected" : ""}`}
+                                            className={`message-item ${
+                                              selectedItem?.type === item.type &&
+                                              (item.type === "friend"
+                                                ? selectedItem?.userId === item.userId
+                                                : selectedItem?.groupId === item.groupId)
+                                                ? "selected"
+                                                : ""
+                                            }`}
                                             // onMouseEnter={() => setHoveredMessageId(item.email)}
                                             // onMouseLeave={() => setHoveredMessageId(null)}
                                             onMouseEnter={() => {
