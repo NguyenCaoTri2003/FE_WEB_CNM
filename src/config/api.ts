@@ -35,4 +35,14 @@ export const API_ENDPOINTS = {
     uploadFile: `${API_BASE_URL}/files/upload`,
     getFile: (fileName: string) => `${API_BASE_URL}/files/${fileName}`,
 
+    //add group
+    createGroup: `${API_BASE_URL}/groups`,
+    getGroups: `${API_BASE_URL}/groups`,
+    getGroupMembers: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/members`,
+    addGroupMembers: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/members`,
+    removeGroupMembers: (groupId: string, memberId: string) => `${API_BASE_URL}/groups/${groupId}/members/${memberId}`,
+    sendMessageGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/messages`,
+    getMessagesGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/messages`,
+    addAdmin: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/admins`,
+    removeAdmin: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/admins`,
 }; 

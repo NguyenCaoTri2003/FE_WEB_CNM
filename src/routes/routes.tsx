@@ -60,7 +60,7 @@ import GroupInvitation from '../pages/user/FriendLayout/pages/GroupInvitation';
 import SettingLayout from '../pages/user/SettingLayout/SettingLayout';
 import Profile from '../pages/user/SettingLayout/pages/Profile';
 
-import Login from '../pages/user/FriendLayout/pages/Login';
+import Login from '../components/Login';
 import Register from '../components/Register';
 import ForgotPassword from '../components/ForgotPassword';
 import ResetPassword from 'components/ResetPassword';
@@ -89,6 +89,7 @@ const AppRoutes = () => {
         </Route> */}
         <Route path="request-friend" element={<FriendInvitation />} />
         <Route path="list-friend" element={<FriendList />} />
+        <Route path="list-group" element={<GroupList />} />
 
         {/* <Route path="setting" element={<SettingLayout />} > */}
           <Route path="profile" element={

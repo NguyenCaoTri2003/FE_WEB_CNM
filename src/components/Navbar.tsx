@@ -5,7 +5,7 @@ import '../assets/styles/Navbar.css';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComments, faContactBook, faTools, faCloud, faSearch, faPencil, faPen } from "@fortawesome/free-solid-svg-icons";
 import { API_ENDPOINTS } from '../config/api';
-import { UserOutlined, SettingOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined, UsergroupAddOutlined, UserAddOutlined, CloseOutlined, EllipsisOutlined, MoreOutlined } from "@ant-design/icons";
+import { UserOutlined, SettingOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined, UsergroupAddOutlined, CameraOutlined ,UserAddOutlined, CloseOutlined, EllipsisOutlined, MoreOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Modal from "react-modal";
 import { useMessageContext } from "../context/MessagesContext";
@@ -44,15 +44,38 @@ interface Message {
 }
 
 interface Friend {
+    userId: string;
     email: string;
     fullName: string;
     avatar: string; // optional
+}
+
+interface Group {
+  email: string;
+  groupId: string;
+  name: string;
+  avatar: string; 
 }
 
 interface FriendResponse {
     success: boolean;
     data: Friend[];
 }
+
+interface GroupResponse {
+  success: boolean;
+  data: Group[];
+  message?: string;
+}
+
+interface CreateGroupResponse {
+  success: boolean;
+  message?: string;
+}
+
+type CombinedItem = 
+  | (Friend & { type: "friend" })
+  | (Group & { type: "group" });
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -63,6 +86,7 @@ const Navbar = () => {
     const [searchedUsers, setSearchedUsers] = useState<any[]>([]);
     const [selectedUserSearch, setSelectedUserSearch] = useState<any>(null);
     const [isModalOpenUser, setIsModalOpenUser] = useState(false);
+    const [isModalOpenGroup, setIsModalOpenGroup] = useState(false);
 
     // const [selectedUser, setSelectedUser] = useState<Message | null>(null);
     // const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
@@ -70,7 +94,9 @@ const Navbar = () => {
     // const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
 
     const [selectedUser, setSelectedUser] = useState<Friend | null>(null);
+    const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
     const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+    const [hoveredMessageType, setHoveredMessageType] = useState<"friend" | "group" | null>(null); 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     
@@ -80,11 +106,25 @@ const Navbar = () => {
     const [hasSentRequest, setHasSentRequest] = useState<boolean>(false);
 
     const [friends, setFriends] = useState<Friend[]>([]);
+    const [groups, setGroups] = useState<Group[]>([]); 
 
     const { lastMessages, updateLastMessage } = useMessageContext()!;
     // const displayLastMessageTime = lastMessageTime ? lastMessageTime.toString().slice(0, 10) : 'Chưa có tin nhắn';
     const [storedMessage, setStoredMessage] = useState<{ message: string, time: Date } | null>(null);
-    console.log("LastMessages context:", lastMessages);
+
+    const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
+
+    //tìm kiếm bạn bè
+    const [searchFriendTerm, setSearchFriendTerm] = useState('');
+    const [filteredFriends, setFilteredFriends] = useState<Friend[]>(friends); 
+
+    //thêm nhóm
+    const [groupNameInput, setGroupNameInput] = useState('');
+
+    const [selectedItem, setSelectedItem] = useState<any>(null);
+
+
+    // console.log("LastMessages context:", lastMessages);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -127,6 +167,8 @@ const Navbar = () => {
         window.removeEventListener('avatarUpdated', handleAvatarUpdate);
         };
     }, []);
+
+
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -203,7 +245,7 @@ const Navbar = () => {
           setIsSearching(true);
           try {
             const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, {
-              params: { email: searchTerm.trim() }
+              params: { email: searchTerm.trim(), phoneNumber: searchTerm.trim() } 
             });
       
             if (response.data?.data) {
@@ -258,6 +300,14 @@ const Navbar = () => {
 
     const handleCloseModal = () => {
         setIsModalOpenUser(false);
+    };
+
+    const handleCloseModalGroup = () => {
+        setIsModalOpenGroup(false);
+    };
+
+    const handleOpenGroup = () => {
+        setIsModalOpenGroup(true);
     };
 
     // const handleRemoveUser = (email: string) => {
@@ -348,7 +398,42 @@ const Navbar = () => {
         };
     
         fetchFriends();
+        
       }, []);
+
+      useEffect(() => {
+        const fetchGroups = async () => {
+          try {
+            const token = localStorage.getItem('token'); // Lấy token từ localStorage
+            const response = await axios.get<GroupResponse>(API_ENDPOINTS.getGroups, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+    
+            if (response.data.success) {
+              setGroups(response.data.data); // Cập nhật state nhóm
+            } else {
+              console.error('Error fetching groups:', response.data.message);
+            }
+          } catch (error) {
+            console.error('Error fetching groups:', error);
+          } finally {
+            // setLoading(false);
+          }
+        };
+    
+        fetchGroups();
+    }, []);
+
+    type CombinedItem = 
+    | (Friend & { type: "friend" })
+    | (Group & { type: "group" });
+
+      const combinedList: CombinedItem[] = [
+        ...friends.map(friend => ({ ...friend, type: "friend" as const })),
+        ...groups.map(group => ({ ...group, type: "group" as const }))
+      ];
 
       
     useEffect(() => {
@@ -358,26 +443,74 @@ const Navbar = () => {
             setStoredMessage(JSON.parse(stored));
         }
     }, []);
-  
-    // const renderMessageContent = (message: string | null) => {
-    //     if (!message) return 'Chưa có tin nhắn';
 
-    //     if (message.endsWith('.jpg') || message.endsWith('.jpeg') || message.endsWith('.png')) {
-    //         return (
-    //             <>
-    //                 🖼️ {message.split('/').pop()}
-    //             </>
-    //         );
-    //     } else if (message.endsWith('.pdf') || message.endsWith('.docx') || message.endsWith('.zip')) {
-    //         return (
-    //             <>
-    //                 📎 {message.split('/').pop()}
-    //             </>
-    //         );
-    //     } else {
-    //         return message;
-    //     }
-    // };
+    const handleSearchFriend = () => {
+      const searchText = searchFriendTerm.trim().toLowerCase();
+      if (searchText === '') {
+        setFilteredFriends(friends);
+      } else {
+        const filtered = friends.filter(friend =>
+          friend.fullName.toLowerCase().includes(searchText)
+        );
+        setFilteredFriends(filtered);
+      }
+    };
+    
+    const handleClearSearch = () => {
+      setSearchFriendTerm('');
+      setFilteredFriends(friends);
+    };
+
+  useEffect(() => {
+      setFilteredFriends(friends);
+  }, [friends]);
+
+  const handleCreateGroup = async () => {
+    const token = localStorage.getItem('token'); 
+    if (selectedFriends.length < 2) {
+      alert('Bạn phải chọn ít nhất 2 thành viên để tạo nhóm.');
+      return;
+    }
+  
+    let groupName = groupNameInput.trim();
+    
+    if (!groupName) {
+      // Nếu không nhập tên nhóm, ghép tên các thành viên
+      const selectedUsers = friends.filter(friend => selectedFriends.includes(friend.email));
+      groupName = selectedUsers.map(user => user.fullName).join(', ');
+    }
+  
+    const groupData = {
+      name: groupName,
+      description: '', // Bạn có thể cho nhập description nếu cần
+      members: selectedFriends, // Mảng email các thành viên được chọn
+      avatar: '', // Hoặc bạn cho upload hình avatar riêng, không thì để BE default
+    };
+  
+    try {
+      const response = await axios.post<CreateGroupResponse>(
+        API_ENDPOINTS.createGroup,
+        groupData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.data.success) {
+        alert('Tạo nhóm thành công!');
+        handleCloseModalGroup(); // Đóng modal
+        // Bạn có thể thêm: load lại danh sách nhóm nếu muốn
+      } else {
+        alert('Tạo nhóm thất bại: ' + response.data.message);
+      }
+    } catch (error) {
+      console.error('Error creating group:', error);
+      alert('Có lỗi khi tạo nhóm.');
+    }
+  };
+  
+    
 
   return (
     <div className="container-main">
@@ -483,8 +616,8 @@ const Navbar = () => {
                         </button>
                     ) : (
                         <>
-                            <UserAddOutlined className="icon-adduser" />
-                            <UsergroupAddOutlined className="icon-addgroup" />
+                            {/* <UserAddOutlined className="icon-adduser" /> */}
+                            <UsergroupAddOutlined className="icon-addgroup" onClick={handleOpenGroup}/>
                         </>
                     )}
                 </div>         
@@ -538,46 +671,69 @@ const Navbar = () => {
                                 </div>
                             </div>
                             <div className="list-mess">
-                                {friends.map((friend) => {
-                                    const last = lastMessages[friend.email];
+                                {combinedList.map((item) => {
+                                    const last = lastMessages[item.email];
                                     const isImage = last?.message?.startsWith("http") && /\.(jpg|jpeg|png|gif)$/i.test(last.message);
                                     const isFile = last?.message?.startsWith("http") && !isImage;
-                                    
+                                    // const isRecall = last?.message === undefined;
 
                                     const messageLabel = isImage
                                         ? "🖼️ Hình ảnh"
                                         : isFile
                                         ? "📎 Tệp tin"
+                                        // : isRecall
+                                        // ? "Tin nhắn đã được thu hồi"
                                         : last?.message || "Chưa có tin nhắn";
+                                        
 
                                     const displayTime = last?.time
                                         ? new Date(last.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                                         : "";
+                                    
+                                    
 
                                     return (
                                         <div 
-                                            key={friend.email} 
-                                            className={`message-item ${selectedUser?.email === friend.email ? "selected" : ""}`}
-                                            onMouseEnter={() => setHoveredMessageId(friend.email)}
-                                            onMouseLeave={() => setHoveredMessageId(null)}
+                                            key={item.email} 
+                                            className={`message-item ${selectedItem?.email === item.email ? "selected" : ""}`}
+                                            // onMouseEnter={() => setHoveredMessageId(item.email)}
+                                            // onMouseLeave={() => setHoveredMessageId(null)}
+                                            onMouseEnter={() => {
+                                              setHoveredMessageId(item.email);
+                                              setHoveredMessageType(item.type);  // Cập nhật thêm loại item khi hover
+                                            }}
+                                            onMouseLeave={() => {
+                                                setHoveredMessageId(null);
+                                                setHoveredMessageType(null);  // Xóa loại item khi không hover nữa
+                                            }}
                                             onClick={() => {
-                                                setSelectedUser(friend);
-                                                navigate("/user/home", { state: friend });
+                                              setSelectedItem(item); 
+                                              if (item.type === "friend") {
+                                                setSelectedUser(item); // chọn user
+                                                navigate("/user/home", { state: { friend: item, groupId: item.userId } });
+                                              } else {
+                                                setSelectedGroup(item); // chọn group
+                                                navigate("/user/home", { state: { friend: item, groupId: item.groupId } });
+                                              }
                                         }}
                                     >
                                         <div className="avatar-icon">
                                         <img
-                                            src={friend.avatar || "https://cdn.pixabay.com/photo/2025/03/18/17/03/dog-9478487_1280.jpg"}
-                                            alt={friend.fullName}
+                                            src={item.avatar || "https://cdn.pixabay.com/photo/2025/03/18/17/03/dog-9478487_1280.jpg"}
+                                            alt={item.type === "friend" ? item.fullName : item.name}
                                         />
                                         </div>
                                         <div className="message-content">
                                             <div className="message-header">
-                                                <span className="message-name">{friend.fullName}</span>
+                                                <span className="message-name">{item.type === "friend" ? item.fullName : item.name}</span>
                                                 <span 
                                                     className="message-time" 
                                                     onClick={(e) => {
-                                                        setSelectedUser(friend);
+                                                        if (item.type === "friend"){
+                                                          setSelectedUser(item);
+                                                        } else {
+                                                          setSelectedGroup(item);
+                                                        }
                                                         setIsModalOpen(true);
                                                         const rect = e.currentTarget.getBoundingClientRect();
                                                         const windowHeight = window.innerHeight;
@@ -591,7 +747,7 @@ const Navbar = () => {
                                                         });
                                                     }}
                                                 >
-                                                    {hoveredMessageId === friend.email ? <MoreOutlined /> : displayTime}
+                                                    {hoveredMessageId === item.email ? <MoreOutlined /> : displayTime}
                                                 </span>
                                             </div>
                                             <div className="message-text">
@@ -600,7 +756,6 @@ const Navbar = () => {
                                         </div>
                                     </div>
                                     )
-                                    
                                 })}
                             </div>
                             <Modal
@@ -637,7 +792,7 @@ const Navbar = () => {
                                     <p className='menu-item-name'>Danh sách bạn bè</p>
                                 </div>
                             </Link>
-                            <Link to="danh-sach-nhom">
+                            <Link to="list-group">
                                 <div className='menu-item'>
                                     <UserAddOutlined className="icon-adduser"/>
                                     <p className='menu-item-name'>Danh sách nhóm</p>
@@ -706,6 +861,86 @@ const Navbar = () => {
             )}
 
         </div>
+
+        <Modal isOpen={isModalOpenGroup} onRequestClose={handleCloseModalGroup} className="create-group-modal" overlayClassName="overlay">
+          <div className="modal-content">
+              <div className="title-modal title-create-group">
+                  <p>Tạo nhóm</p>
+                  <CloseOutlined className="icon-close-modal-user" onClick={handleCloseModalGroup}/>
+              </div>
+
+              <div className="create-search">
+                <div className="info-group">
+                  <div className="icon-camera">
+                    <CameraOutlined className="icon-choose-img"/>
+                  </div>
+                  <div className="input-name">
+                      <input 
+                        type="text" 
+                        placeholder="Nhập tên nhóm..." 
+                        value={groupNameInput}
+                        onChange={(e) => setGroupNameInput(e.target.value)}
+                      />
+                  </div>
+                </div>
+                <div className="search-mem">
+                    <FontAwesomeIcon icon={faSearch} />
+                    <input 
+                      type="text" 
+                      placeholder="Tìm kiếm thành viên..."
+                      value={searchFriendTerm}
+                      onChange={(e) => setSearchFriendTerm(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearchFriend();
+                        }
+                      }}
+                    />
+                    {searchFriendTerm && (
+                      <span className="clear-search" onClick={handleClearSearch}>
+                        ✖
+                      </span>
+                    )}
+                </div>
+              </div>
+
+              <div className="content-mem">
+                <p>Bạn bè của bạn</p>
+                <div className="list-mem">
+                  {filteredFriends.length > 0 ? (
+                    filteredFriends.map((friend) => (
+                      <div key={friend.email} className="user-item group-item">
+                        <label className="info-user">
+                          <input
+                            type="checkbox"
+                            style={{ marginRight: '8px' }}
+                            checked={selectedFriends.includes(friend.email)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedFriends([...selectedFriends, friend.email]);
+                              } else {
+                                setSelectedFriends(selectedFriends.filter(email => email !== friend.email));
+                              }
+                            }}
+                          />
+                          <img src={friend.avatar} alt="User" />
+                          <div className="user-name">{friend.fullName}</div>
+                        </label>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="no-friends-found">Không có bạn bè phù hợp.</div>
+                  )}
+                </div>
+
+              </div>
+
+              <div className="btn-group">
+                  <button className="btn-cancle" onClick={handleCloseModalGroup}>Hủy</button>
+                  <button className={`btn-create-group ${selectedFriends.length >= 2 ? 'active-group' : ''}`} onClick={handleCreateGroup}>Tạo nhóm</button>
+              </div>
+          </div>
+      </Modal>
     </div>
   );
 };

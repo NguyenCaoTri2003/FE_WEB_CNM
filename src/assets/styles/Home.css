@@ -412,7 +412,7 @@
     border-bottom: 1px solid #cbccce;
     position: sticky;
     top: 0;
-    z-index: 1000;
+    /* z-index: 1000; */
     height: 68px;
     min-height: 68px;
     padding: 0px 16px;
@@ -583,14 +583,14 @@
 }
 
 .sidebar-content{
-    background-color: #1763d5;
     display: flex;
     flex-direction: column;
     overflow-y: auto; 
+    gap: 10px;
 }
 
 .header-info{
-    background-color: #84b3f9;
+    background-color: #ffffff;
     padding: 12px 16px;
     display: flex;
     flex-direction: column;
@@ -683,7 +683,7 @@
 
 .type{
     padding: 9px 9px 9px 9px;
-    background-color: #5a6981;
+    background-color: #ffffff;
 }
 
 .btn-number-group{
@@ -1058,4 +1058,157 @@
 .btn-file{
     border: none;
     background: transparent;
+}
+.reaction-options {
+    display: flex;
+    gap: 5px;
+    position: absolute;
+    bottom: -25px;
+    background: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+.reaction-btn {
+    cursor: pointer;
+    font-size: 18px;
+    transition: transform 0.2s ease;
+}
+
+.reaction-btn:hover {
+    transform: scale(1.2);
+}
+
+.reaction-list {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+.reaction-item {
+    font-size: 14px;
+}
+/* .list-member-group{
+    width: 20%;
+    height: 100%;
+    position: relative;
+    right: 0;
+    top: 0;
+    background: #ff1717;
+    border-left: 1px solid #ccc;
+} */
+.list-member-group {
+    width: 20%;
+    height: 90%;
+    background-color: rgb(255, 255, 255);
+    position: absolute;
+    right: 0;
+    top: 0;
+    border-left: 1px solid #ccc;
+    margin-top: 68px;
+    color: #000000;
+    display: flex;
+    flex-direction: column;
+    padding: 10px 10px 10px 10px;
+    gap: 10px;
+}
+  
+.avatar-mem img{
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+.list-member-group p{
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 0px;
+}
+.btn-add-mem{
+    border-radius: 3px;
+    cursor: pointer;
+    padding: 0 16px;
+    font-size: 1rem;
+    height: 32px;
+    background-color: #e6e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.list-member{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.item-mem{
+    display: flex;
+    flex-direction: row;
+    height: 64px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 10px 10px 10px;
+    border-bottom: 1px solid #e0e0e0;
+    border-top: 1px solid #e0e0e0;
+}
+.item-mem:hover{
+    background-color: #f0f2f5;
+}
+.item-mem p{
+    font-size: .875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 0px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    word-wrap: break-word;
+}
+.item-mem span{
+    font-size: .875rem;
+    font-weight: 400;
+    line-height: 1.5;
+}
+.name-mem{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-wrap: break-word;
+}
+.menu-trigger {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.menu-options {
+    position: absolute;
+    top: 30px;
+    right: 10px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+    z-index: 100;
+}
+
+.menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.menu-item:hover {
+    background: #eee;
 }

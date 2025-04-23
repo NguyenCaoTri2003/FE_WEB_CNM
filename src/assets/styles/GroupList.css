@@ -1,143 +1,223 @@
-.contact-page{
-    background-color: #EBECF0;
-    width: 100%;
-    height: 100%;
-}
 
-.head-page-contact {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    padding: 20px 20px;
-    background-color: #fff;
-    border-bottom: 1px solid #CBCCCE;
-    color: black;
-}
-
-.card-list-wapper{
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 20px 20px;
-}
-
-.text-head-page-contact{
-    margin: 0;
-    display: flex;
-    align-items: center;
-    font-size: 15px;
-    color: black;
-}
-
-.backgroud-list {
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  
+  .contact-page {
+    background-color: #ffffff;
+    min-height: 100vh;
+    margin-left: 464px;
+  }
+  
+  /* Header styles */
+  .header-group {
     background-color: white;
-    border-radius: 5px;
-}
-
-.filter {
+    padding: 12px 16px;
     display: flex;
-    gap: 10px;
     align-items: center;
-    background-color: #fff;
-    padding: 20px 20px;
-    border-radius: 5px;
-}
-
-.sreach {
-    height: 32px;
-    flex: 1;
-    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .header-icon {
+    height: 20px;
+    width: 20px;
+    margin-right: 8px;
+    color: #4b5563;
+  }
+  
+  .header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+  
+  /* Content wrapper */
+  .content-wrapper {
+    background-color: #f1f2f4;
+    min-height: calc(100vh - 49px);
+    padding: 16px 0 0 0;
+  }
+  
+  /* group count */
+  .group-count {
+    padding: 0 16px 16px 16px;
+  }
+  
+  .group-count h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1f2937;
+  }
+  
+  /* Search and filters */
+  .search-filter-container {
+    padding: 0 16px;
+    margin-bottom: 16px;
+  }
+  
+  .search-container {
     position: relative;
-}
-
-.sreach input {
-    width: 100%;
-    border-radius: 5px;
-    border: 1px solid #EBECF0;
-    height: auto;
-    font-size: 14px;
-    padding-left: 30px;
-    padding-right: 10px;
-    outline: none;
-}
-
-.sreach svg {
+    margin-bottom: 8px;
+  }
+  
+  .search-icon {
     position: absolute;
-    left: 10px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #666;
-    font-size: .875rem;
-}
-
-.filter-contact{
-    flex: 1;
-    height: 32px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.sort {
-    flex: 1;
-    height: 32px;
+    color: #9ca3af;
+    height: 16px;
+    width: 16px;
+    pointer-events: none; /* Đảm bảo icon không chặn tương tác với input */
+    z-index: 1; /* Đặt z-index thấp hơn input */
+  }
+  
+  .search-input-group {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
     font-size: 14px;
-}
-
-.sort select {
+    background-color: #ffffff;
+    position: relative;
+    z-index: 0; /* Đảm bảo input nằm dưới icon */
+  }
+  
+  .search-input-group:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+  
+  .filter-buttons {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .filter-button {
+    padding: 8px 12px;
+    background-color: #f9fafb;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .filter-button span {
+    color: #4b5563;
+  }
+  
+  .filter-icon {
+    height: 16px;
+    width: 16px;
+    color: #6b7280;
+  }
+  
+  /* group list */
+  .group-list {
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 0 16px;
+  }
+  
+  .group-group:not(:last-child) {
+    margin-bottom: 16px;
+  }
+  
+  .group-header {
+    padding: 8px 16px;
+    background-color: #f9fafb;
+  }
+  
+  .group-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4b5563;
+  }
+  
+  .group-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .group-info {
+    display: flex;
+    align-items: center;
+  }
+  
+  .group-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    position: relative;
+  }
+  
+  .avatar-image {
     width: 100%;
     height: 100%;
-    border-radius: 5px;
-    border: 1px solid #EBECF0;
-    outline: none;
-    padding: 0 10px;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 1; 
+  }
+  
+  .group-name {
+    margin-left: 12px;
+    font-weight: 500;
     font-size: 14px;
-}
-
-.list-contact {
-    background-color: white;
-}
-
-.item-wapper {
-    padding: 10px 20px;
-    background-color: rgb(255, 255, 255);
+    color: #1f2937;
+  }
+  
+  .more-button {
+    padding: 4px;
+    border-radius: 50%;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 20px;
-    border-bottom: 1px solid #CBCCCE;
-}
-.item-wapper:hover {
-    background-color: #f0f0f0;
-}
-
-.img-size {
-    width: 50px;
-    height: 50px;
-    border-radius: 5px;
-    background-color: aquamarine;
-}
-
-.info-item {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-}
-.info-item svg{
-    color: black;
-}
-.info-item p {
-    margin: 0;
-    display: flex;
-    align-items: center;
-}
-
-.name-item {
-    color: black;
-    font-size: 16px;
-}
-
-.zise-item {
-    color: #666;
-    font-size: 13px;
-    font-weight: 400;
-}
+    justify-content: center;
+  }
+  
+  .more-button:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .more-icon {
+    height: 20px;
+    width: 20px;
+    color: #6b7280;
+  }
+  
+  /* Media queries for responsive design */
+  @media (min-width: 768px) {
+    .search-filter-container {
+      display: flex;
+      gap: 8px;
+    }
+  
+    .search-container {
+      flex: 1;
+      margin-bottom: 0;
+    }
+  
+    .filter-buttons {
+      width: 320px;
+    }
+  }
+   
