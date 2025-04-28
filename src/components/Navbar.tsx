@@ -400,8 +400,11 @@ const Navbar = () => {
         fetchFriends();
         
       }, []);
+      
+      
 
       useEffect(() => {
+
         const fetchGroups = async () => {
           try {
             const token = localStorage.getItem('token'); // Lấy token từ localStorage
@@ -422,6 +425,7 @@ const Navbar = () => {
             // setLoading(false);
           }
         };
+        
     
         fetchGroups();
     }, []);
@@ -500,6 +504,7 @@ const Navbar = () => {
       if (response.data.success) {
         alert('Tạo nhóm thành công!');
         handleCloseModalGroup(); // Đóng modal
+        // fetchGroups();
         // Bạn có thể thêm: load lại danh sách nhóm nếu muốn
       } else {
         alert('Tạo nhóm thất bại: ' + response.data.message);
@@ -672,7 +677,8 @@ const Navbar = () => {
                             </div>
                             <div className="list-mess">
                                 {combinedList.map((item) => {
-                                    const last = lastMessages[item.email];
+                                    const id = item.type === "friend" ? item.email : item.groupId;
+                                    const last = lastMessages[id];
                                     const isImage = last?.message?.startsWith("http") && /\.(jpg|jpeg|png|gif)$/i.test(last.message);
                                     const isFile = last?.message?.startsWith("http") && !isImage;
                                     // const isRecall = last?.message === undefined;
@@ -754,7 +760,10 @@ const Navbar = () => {
                                                         });
                                                     }}
                                                 >
-                                                    {hoveredMessageId === item.email ? <MoreOutlined /> : displayTime}
+                                                  {hoveredMessageId === (item.type === "friend" ? item.userId : item.groupId) &&
+                                                    hoveredMessageType === item.type
+                                                      ? <MoreOutlined />
+                                                      : displayTime}
                                                 </span>
                                             </div>
                                             <div className="message-text">

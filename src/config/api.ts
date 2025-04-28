@@ -8,6 +8,7 @@ export const API_ENDPOINTS = {
     registerVerify: `${API_BASE_URL}/register/verify`,
     login: `${API_BASE_URL}/login`,
     profile: `${API_BASE_URL}/profile`,
+    getProfileByEmail: (email: string) => `${API_BASE_URL}/profile/${email}`,
     upload: `${API_BASE_URL}/upload`,
     
     forgotPassword: `${API_BASE_URL}/forgot-password`,
@@ -30,6 +31,8 @@ export const API_ENDPOINTS = {
     markAsRead: (messageId: string) => `${API_BASE_URL}/messages/read/${messageId}`,
     recall: (messageId: string) => `${API_BASE_URL}/messages/recall/${messageId}`,
     deleteMessage: (messageId: string) => `${API_BASE_URL}/messages/delete/${messageId}`,
+    reaction : `${API_BASE_URL}/messages/reaction`,
+    reactionGroup : (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/reactions`,
 
     //upload file
     uploadFile: `${API_BASE_URL}/files/upload`,
@@ -38,6 +41,8 @@ export const API_ENDPOINTS = {
     //add group
     createGroup: `${API_BASE_URL}/groups`,
     getGroups: `${API_BASE_URL}/groups`,
+    updateGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}`,
+    updateGroupInfo: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/info`,
     getGroupMembers: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/members`,
     addGroupMembers: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/members`,
     removeGroupMembers: (groupId: string, memberId: string) => `${API_BASE_URL}/groups/${groupId}/members/${memberId}`,
@@ -45,4 +50,7 @@ export const API_ENDPOINTS = {
     getMessagesGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/messages`,
     addAdmin: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/admins`,
     removeAdmin: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/admins`,
+    forwardMessage: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/forward`,
+    recallGroupMessage: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/recall`,
+    deleteGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}`,
 }; 
