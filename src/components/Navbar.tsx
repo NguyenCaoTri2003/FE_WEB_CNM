@@ -31,8 +31,17 @@ interface SearchUserResponse {
 interface FriendRequestResponse {
     success: boolean;
     message: string;
-  }
-  
+}
+
+interface FriendRequestResponses {
+  success: boolean;
+  data: {
+    received: { email: string }[];
+    sent: { email: string }[];
+  };
+}
+
+
 
 Modal.setAppElement("#root");
 
@@ -73,6 +82,11 @@ interface CreateGroupResponse {
   message?: string;
 }
 
+interface UnfriendResponse {
+  success: boolean;
+  message: string;
+}
+
 type CombinedItem = 
   | (Friend & { type: "friend" })
   | (Group & { type: "group" });
@@ -85,6 +99,9 @@ const Navbar = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchedUsers, setSearchedUsers] = useState<any[]>([]);
     const [selectedUserSearch, setSelectedUserSearch] = useState<any>(null);
+    const [recentSearchedUsers, setRecentSearchedUsers] = useState<any[]>([]);
+    const [searchResult, setSearchResult] = useState<any | null>(null); 
+
     const [isModalOpenUser, setIsModalOpenUser] = useState(false);
     const [isModalOpenGroup, setIsModalOpenGroup] = useState(false);
 
@@ -104,6 +121,7 @@ const Navbar = () => {
     const [showContacts, setShowContacts] = useState(false);
 
     const [hasSentRequest, setHasSentRequest] = useState<boolean>(false);
+    const [hasIncomingRequest, setHasIncomingRequest] = useState(false);
 
     const [friends, setFriends] = useState<Friend[]>([]);
     const [groups, setGroups] = useState<Group[]>([]); 
@@ -124,6 +142,7 @@ const Navbar = () => {
     const [selectedItem, setSelectedItem] = useState<any>(null);
 
 
+
     // console.log("LastMessages context:", lastMessages);
 
     useEffect(() => {
@@ -139,9 +158,9 @@ const Navbar = () => {
             });
     
             const data = res.data as {
-            success: boolean;
-            message: string;
-            user: UserProfile;
+              success: boolean;
+              message: string;
+              user: UserProfile;
             };
     
             if (data.success) {
@@ -196,101 +215,136 @@ const Navbar = () => {
         navigate('/login');
     };
 
-    // const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    //   if (e.key === 'Enter' && searchTerm.trim()) {
-    //       try {
-    //           const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, {
-    //               params: {
-    //                   email: searchTerm.trim()
-    //               }
-    //           });
-
-    //           if (response.data?.data) {
-    //               const newUser = response.data.data;
-    //               const alreadyExists = searchedUsers.some(u => u.email === newUser.email);
-    //               if (!alreadyExists) {
-    //                   setSearchedUsers(prev => [newUser, ...prev]);
-    //               }
-    //               setSearchTerm('');
-    //           }
-    //       } catch (err) {
-    //           console.error("Tìm không thấy người dùng hoặc lỗi server", err);
-    //       }
-    //   }
-    // };
-
-    // const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    //   if (e.key === 'Enter' && searchTerm.trim()) {
-    //       setIsSearching(true); // 👉 bật chế độ tìm kiếm
-    //       try {
-    //           const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, {
-    //               params: { email: searchTerm.trim() }
-    //           });
     
-    //           if (response.data?.data) {
-    //               const newUser = response.data.data;
-    //               const alreadyExists = searchedUsers.some(u => u.email === newUser.email);
-    //               if (!alreadyExists) {
-    //                   setSearchedUsers(prev => [newUser, ...prev]);
-    //               }
-    //               setSearchTerm('');
-    //           }
-    //       } catch (err) {
-    //           console.error("Tìm không thấy người dùng hoặc lỗi server", err);
-    //       }
-    //   }
-    // };
-    const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter' && searchTerm.trim()) {
-          setIsSearching(true);
-          try {
-            const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, {
-              params: { email: searchTerm.trim(), phoneNumber: searchTerm.trim() } 
-            });
+    // const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    //     if (e.key === 'Enter' && searchTerm.trim()) {
+    //       setIsSearching(true);
+    //       try {
+    //         const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, {
+    //           params: { email: searchTerm.trim(), phoneNumber: searchTerm.trim() } 
+    //         });
       
-            if (response.data?.data) {
-              const newUser = {
-                ...response.data.data,
-                searchedAt: new Date().toISOString() // 👉 Lưu thời gian tìm kiếm
-            };
+    //         if (response.data?.data) {
+    //           const newUser = {
+    //             ...response.data.data,
+    //             searchedAt: new Date().toISOString() // 👉 Lưu thời gian tìm kiếm
+    //         };
 
-            if (
-                (user?.email && user.email === newUser.email) ||
-                (user?.phoneNumber && user.phoneNumber === newUser.phoneNumber)
-              ) {
-                navigate('/profile');
-                return; // Dừng không xử lý tiếp
-              }
+    //         if (
+    //             (user?.email && user.email === newUser.email) ||
+    //             (user?.phoneNumber && user.phoneNumber === newUser.phoneNumber)
+    //           ) {
+    //             navigate('/profile');
+    //             return; // Dừng không xử lý tiếp
+    //           }
       
+    //         const existing = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
+    //         const alreadyExists = existing.some((u: any) => u.email === newUser.email);
+    //         const updated = alreadyExists ? existing : [newUser, ...existing];
+      
+    //         localStorage.setItem("searchedUsers", JSON.stringify(updated));
+    //         setSearchedUsers(updated);
+    //         setSearchTerm('');
+    //     }
+    //       } catch (err) {
+    //         console.error("Tìm không thấy người dùng hoặc lỗi server", err);
+    //       }
+    //     }
+    // };
+
+    // useEffect(() => {
+    //     if (isSearching) {
+    //       const stored = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
+      
+    //       const fiveDaysAgo = new Date();
+    //       fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+      
+    //       const filtered = stored.filter((user: any) => {
+    //         return new Date(user.searchedAt) >= fiveDaysAgo;
+    //       });
+      
+    //       setSearchedUsers(filtered);
+    //     }
+    //   }, [isSearching]);
+     
+    const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' && searchTerm.trim()) {
+        try {
+          const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, {
+            params: { email: searchTerm.trim(), phoneNumber: searchTerm.trim() }
+          });
+    
+          if (response.data?.data) {
+            const newUser = {
+              ...response.data.data,
+              searchedAt: new Date().toISOString()
+            };
+    
+            if (
+              (user?.email && user.email === newUser.email) ||
+              (user?.phoneNumber && user.phoneNumber === newUser.phoneNumber)
+            ) {
+              navigate('/profile');
+              return;
+            }
+    
+            // Cập nhật localStorage nếu chưa có
             const existing = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
             const alreadyExists = existing.some((u: any) => u.email === newUser.email);
             const updated = alreadyExists ? existing : [newUser, ...existing];
-      
+    
             localStorage.setItem("searchedUsers", JSON.stringify(updated));
-            setSearchedUsers(updated);
-            setSearchTerm('');
-        }
-          } catch (err) {
-            console.error("Tìm không thấy người dùng hoặc lỗi server", err);
+    
+            // 👉 chỉ hiện kết quả mới tìm
+            setSearchResult(newUser);
+            setSearchedUsers([]); // Ẩn danh sách cũ
+            setIsSearching(true);
           }
+        } catch (err) {
+          console.error("Tìm không thấy người dùng hoặc lỗi server", err);
         }
+      }
     };
 
     useEffect(() => {
-        if (isSearching) {
-          const stored = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
-      
-          const fiveDaysAgo = new Date();
-          fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-      
-          const filtered = stored.filter((user: any) => {
-            return new Date(user.searchedAt) >= fiveDaysAgo;
-          });
-      
-          setSearchedUsers(filtered);
-        }
-      }, [isSearching]);
-      
+      if (isSearching && !searchResult) {
+        const stored = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
+    
+        const fiveDaysAgo = new Date();
+        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+    
+        const filtered = stored.filter((user: any) => {
+          return new Date(user.searchedAt) >= fiveDaysAgo;
+        });
+    
+        setSearchedUsers(filtered);
+      }
+    }, [isSearching, searchResult]);
+
+    const handleClearSearchUser = () => {
+      setSearchTerm('');
+      setSearchResult(null); // 👉 bỏ kết quả hiện tại
+      setIsSearching(true);  // 👉 hiển thị lại lịch sử
+    };
+
+    const handleSearchFriend = () => {
+      const searchText = searchFriendTerm.trim().toLowerCase();
+      if (searchText === '') {
+        setFilteredFriends(friends);
+      } else {
+        const filtered = friends.filter(friend =>
+          friend.fullName.toLowerCase().includes(searchText)
+        );
+        setFilteredFriends(filtered);
+      }
+    };
+    
+    const handleClearSearch = () => {
+      setSearchFriendTerm('');
+      setFilteredFriends(friends);
+    };
+    
+    
       
 
     const handleUserClick = (user: any) => {
@@ -321,36 +375,73 @@ const Navbar = () => {
         });
       };
 
+    const fetchFriends = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.error("Người dùng chưa đăng nhập hoặc token không hợp lệ");
+          return;
+        }
+
+        const response = await axios.get<FriendResponse>(`${API_ENDPOINTS.getFriends}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data.success) {
+          setFriends(response.data.data);
+        } else {
+          console.error("Lỗi khi lấy danh sách bạn bè");
+        }
+      } catch (error) {
+        console.error("Lỗi khi gọi API:", error);
+      } finally {
+        // setLoading(false);
+      }
+    };
+  
+    useEffect(() => {
+        fetchFriends();
+    }, []);
+
     // Gửi lời mời kết bạn
     const sendFriendRequest = async (receiverEmail: string) => {
-        try {
-          const token = localStorage.getItem("token");
-          if (!token) {
-            console.log("Token không tồn tại, người dùng chưa đăng nhập");
-            return;
-          }
-      
-          const response = await axios.post<FriendRequestResponse>(
-            API_ENDPOINTS.sendFriendRequest,
-            { receiverEmail },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-      
-          if (response.data.success) {
-            console.log("Đã gửi lời mời kết bạn");
-            setHasSentRequest(true);
-          } else {
-            console.log(response.data.message);
-          }
-        } catch (err) {
-          console.error(err);
-          console.log("Lỗi khi gửi lời mời");
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const currentUserEmail  = user.email;
+
+      console.log("currentUserEmail:", currentUserEmail);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.log("Token không tồn tại, người dùng chưa đăng nhập");
+          return;
         }
-      };
+        const response = await axios.post<FriendRequestResponse>(
+          API_ENDPOINTS.sendFriendRequest,
+          { receiverEmail },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        // Kiểm tra giá trị
+    
+        if (response.data.success) {
+          console.log("Đã gửi lời mời kết bạn");
+          setHasSentRequest(true);
+          if (currentUserEmail == receiverEmail) {
+            setHasIncomingRequest(true);  // Người nhận lời mời 
+          }
+        } else {
+          console.log(response.data.message);
+        }
+      } catch (err) {
+        console.error(err);
+        console.log("Lỗi khi gửi lời mời");
+      }
+    };
 
     const cancelFriendRequest = async (receiverEmail: string) => {
         try {
@@ -368,66 +459,157 @@ const Navbar = () => {
           console.error(err);
           console.log("Lỗi khi thu hồi lời mời");
         }
-      };
-    
-    useEffect(() => {
-        const fetchFriends = async () => {
-          try {
-            const token = localStorage.getItem("token");
-            if (!token) {
-              console.error("Người dùng chưa đăng nhập hoặc token không hợp lệ");
+    };
+
+    const unfriend = async (friendEmail: string) => {
+      try {
+          const token = localStorage.getItem("token");
+          if (!token) {
+              console.error("Token không tồn tại, người dùng chưa đăng nhập");
               return;
-            }
-    
-            const response = await axios.get<FriendResponse>(`${API_ENDPOINTS.getFriends}`, {
+          }
+  
+          const response = await axios.post<UnfriendResponse>(
+              API_ENDPOINTS.unFriend, 
+              { friendEmail },
+              {
+                  headers: {
+                      Authorization: `Bearer ${token}`,
+                  },
+              }
+          );
+  
+          if (response.data.success) {
+              console.log("Đã hủy kết bạn thành công");
+  
+              // Xóa người bạn đó khỏi danh sách friends
+              setFriends(prevFriends => prevFriends.filter(friend => friend.email !== friendEmail));
+  
+              // Nếu người đang xem (selectedUserSearch) vừa bị hủy, thì cập nhật luôn trạng thái
+              if (selectedUserSearch?.email === friendEmail) {
+                fetchFriends();
+                setHasSentRequest(false); // Cẩn thận reset luôn trạng thái lời mời
+              }
+          } else {
+              console.error(response.data.message);
+          }
+      } catch (error) {
+          console.error("Lỗi khi hủy kết bạn:", error);
+      }
+    };
+
+    const handleRespondToRequest = async (senderEmail: string, accept: boolean) => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const currentUserEmail  = user.email;
+      try {
+          const token = localStorage.getItem('token');
+          if (!token) {
+              console.error('Người dùng chưa đăng nhập hoặc token không hợp lệ');
+              return;
+          }
+          const response = await axios.post<FriendRequestResponse>(API_ENDPOINTS.respondFriendRequest, {
+              senderEmail,
+              accept,
+            }, {
               headers: {
                 Authorization: `Bearer ${token}`,
-              },
-            });
+              }
+          });
     
-            if (response.data.success) {
-              setFriends(response.data.data);
+          if (response.data.success) {
+            if (accept) {
+              console.log("Đã chấp nhận lời mời kết bạn");
+              // Cập nhật trạng thái cho người B khi đã chấp nhận lời mời
+              if (currentUserEmail === senderEmail) {
+                setHasSentRequest(true);  // Người A đã gửi lời mời
+              } else {
+                setHasIncomingRequest(false);  // Người B đã chấp nhận
+              }
             } else {
-              console.error("Lỗi khi lấy danh sách bạn bè");
+              console.log("Đã từ chối lời mời kết bạn");
+              setHasIncomingRequest(false);  // Người B đã từ chối
             }
-          } catch (error) {
-            console.error("Lỗi khi gọi API:", error);
-          } finally {
-            // setLoading(false);
+            setHasIncomingRequest(false);  // Xóa trạng thái lời mời sau khi phản hồi
+          } else {
+            console.error(response.data.message);
           }
-        };
+      } catch (error) {
+        console.error("Không thể phản hồi lời mời kết bạn:", error);
+        alert("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
+      }
+  };
+  
     
+      
+    const isFriend = selectedUserSearch 
+    ? friends.some(friend => friend.email === selectedUserSearch.email) 
+    : false;
+
+    const fetchFriendRequests = async () => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const currentUserEmail = user.email;
+    
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+    
+        const response = await axios.get<FriendRequestResponses>(`${API_ENDPOINTS.getFriendRequests}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+    
+        if (response.data.success) {
+          const { received, sent } = response.data.data;
+    
+          // Kiểm tra xem selectedUserSearch có nằm trong danh sách đã nhận lời mời hay không
+          const isIncoming = received.some(
+            (req) => req.email === selectedUserSearch?.email
+          );
+          setHasIncomingRequest(isIncoming);
+    
+          // Kiểm tra xem selectedUserSearch có nằm trong danh sách đã gửi lời mời hay không
+          const isSent = sent.some(
+            (req) => req.email === selectedUserSearch?.email
+          );
+          setHasSentRequest(isSent);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy lời mời kết bạn:", error);
+      }
+    };
+
+    useEffect(() => {
+      if (selectedUserSearch) {
         fetchFriends();
-        
-      }, []);
-      
-      
+        fetchFriendRequests(); // Gọi khi có selectedUserSearch
+      }
+    }, [selectedUserSearch]);
 
-      useEffect(() => {
 
-        const fetchGroups = async () => {
-          try {
-            const token = localStorage.getItem('token'); // Lấy token từ localStorage
-            const response = await axios.get<GroupResponse>(API_ENDPOINTS.getGroups, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            });
-    
-            if (response.data.success) {
-              setGroups(response.data.data); // Cập nhật state nhóm
-            } else {
-              console.error('Error fetching groups:', response.data.message);
-            }
-          } catch (error) {
-            console.error('Error fetching groups:', error);
-          } finally {
-            // setLoading(false);
+    useEffect(() => {
+
+      const fetchGroups = async () => {
+        try {
+          const token = localStorage.getItem('token'); // Lấy token từ localStorage
+          const response = await axios.get<GroupResponse>(API_ENDPOINTS.getGroups, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+  
+          if (response.data.success) {
+            setGroups(response.data.data); // Cập nhật state nhóm
+          } else {
+            console.error('Error fetching groups:', response.data.message);
           }
-        };
-        
-    
-        fetchGroups();
+        } catch (error) {
+          console.error('Error fetching groups:', error);
+        } finally {
+          // setLoading(false);
+        }
+      };
+      fetchGroups();
     }, []);
 
     type CombinedItem = 
@@ -448,22 +630,7 @@ const Navbar = () => {
         }
     }, []);
 
-    const handleSearchFriend = () => {
-      const searchText = searchFriendTerm.trim().toLowerCase();
-      if (searchText === '') {
-        setFilteredFriends(friends);
-      } else {
-        const filtered = friends.filter(friend =>
-          friend.fullName.toLowerCase().includes(searchText)
-        );
-        setFilteredFriends(filtered);
-      }
-    };
     
-    const handleClearSearch = () => {
-      setSearchFriendTerm('');
-      setFilteredFriends(friends);
-    };
 
   useEffect(() => {
       setFilteredFriends(friends);
@@ -514,6 +681,7 @@ const Navbar = () => {
       alert('Có lỗi khi tạo nhóm.');
     }
   };
+
   
     
 
@@ -594,8 +762,9 @@ const Navbar = () => {
       </div>
 
       <div className="container-search">
+            {/* khung search */}
             <div className="search-section">
-                <div className="search-input">
+                {/* <div className="search-input">
                     <FontAwesomeIcon icon={faSearch} />
                     <input 
                         type="text"
@@ -609,6 +778,22 @@ const Navbar = () => {
                         onFocus={() => setIsSearching(true)}
                         onKeyDown={handleSearch}
                     />
+                </div> */}
+                <div className="search-input">
+                  <FontAwesomeIcon icon={faSearch} />
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => {
+                      if (!searchResult) setIsSearching(true);
+                    }}
+                    onKeyDown={handleSearch}
+                  />
+                  {searchTerm && (
+                    <CloseOutlined className="icon-clear" onClick={handleClearSearchUser} />
+                  )}
                 </div>
                 <div className="icon-section">
                     {isSearching ? (
@@ -629,33 +814,69 @@ const Navbar = () => {
             </div>
 
             {isSearching ? (
-                searchedUsers.length > 0 ? (
-                    <div className="user-search">
-                        <div className="title-search">
-                            <p>Tìm gần đây</p>
+                // searchedUsers.length > 0 ? (
+                //     <div className="user-search">
+                //         <div className="title-search">
+                //             <p>Tìm gần đây</p>
+                //         </div>
+                //         <div className="list-search">
+                //             {searchedUsers.map((user) => (
+                //                 <div key={user.email} className="user-item" onClick={() => handleUserClick(user)}>
+                //                     <div className="info-user">
+                //                         <img src={user.avatar} alt="User" />
+                //                         <div className="user-name">{user.fullName}</div>
+                //                     </div>
+                //                     <CloseOutlined className="icon-close" onClick={(e) => {
+                //                         e.stopPropagation();
+                //                         handleRemoveUser(user.email);
+                //                     }} />
+                //                 </div>
+                //             ))}
+                //         </div>
+                //     </div>
+                // ) : (
+                //     <div className="user-search">
+                //         <p>Không tìm thấy người dùng nào.</p>
+                //     </div>
+                // )
+                searchResult ? (
+                  <div className="user-search">
+                    <div className="title-search"><p>Kết quả tìm kiếm</p></div>
+                    <div className="list-search">
+                      <div className="user-item" onClick={() => handleUserClick(searchResult)}>
+                        <div className="info-user">
+                          <img src={searchResult.avatar} alt="User" />
+                          <div className="user-name">{searchResult.fullName}</div>
                         </div>
-                        <div className="list-search">
-                            {searchedUsers.map((user) => (
-                                <div key={user.email} className="user-item" onClick={() => handleUserClick(user)}>
-                                    <div className="info-user">
-                                        <img src={user.avatar} alt="User" />
-                                        <div className="user-name">{user.fullName}</div>
-                                    </div>
-                                    <CloseOutlined className="icon-close" onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveUser(user.email);
-                                    }} />
-                                </div>
-                            ))}
-                        </div>
+                      </div>
                     </div>
+                  </div>
                 ) : (
-                    <div className="user-search">
+                  <div className="user-search">
+                    <div className="title-search"><p>Tìm gần đây</p></div>
+                    <div className="list-search">
+                      {searchedUsers.length > 0 ? (
+                        searchedUsers.map((user) => (
+                          <div key={user.email} className="user-item" onClick={() => handleUserClick(user)}>
+                            <div className="info-user">
+                              <img src={user.avatar} alt="User" />
+                              <div className="user-name">{user.fullName}</div>
+                            </div>
+                            <CloseOutlined className="icon-close" onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveUser(user.email);
+                            }} />
+                          </div>
+                        ))
+                      ) : (
                         <p>Không tìm thấy người dùng nào.</p>
+                      )}
                     </div>
+                  </div>
                 )
             ) : (
                 <div className="left-section">
+                  {/* khu vực danh sách chat và menu bạn bè */}
                     
                     {!showContacts ? (
                         <div className="user-chat-section">
@@ -851,13 +1072,32 @@ const Navbar = () => {
                                 </div>
                             </div>
                             <div className="btn-info">
-                                {/* <button className="btn-addfriend">Thêm bạn bè</button> */}
-                                {hasSentRequest ? (
-                                    <button className="btn-addfriend" onClick={() => cancelFriendRequest(selectedUserSearch.email)}>Hủy lời mời</button>
+                                {isFriend ? (
+                                  <>  
+                                    <button className="btn-addfriend" onClick={() => unfriend(selectedUserSearch.email)}>Hủy kết bạn</button>
+                                    <button className="btn-chat">Nhắn tin</button>
+                                  </>
+                                  
+                                ) : (
+                                  <>
+                                    {hasIncomingRequest ? (
+                                      <>
+                                        <button className="btn-addfriend" onClick={() => handleRespondToRequest(selectedUserSearch.email, true)}>Chấp nhận</button>
+                                        <button className="btn-addfriend" onClick={() => handleRespondToRequest(selectedUserSearch.email, false)}>Từ chối</button>
+                                        <button className="btn-chat">Nhắn tin</button>
+                                      </>
                                     ) : (
-                                    <button className="btn-addfriend" onClick={() => sendFriendRequest(selectedUserSearch.email)}>Thêm bạn bè</button>
+                                      <>
+                                        {hasSentRequest ? (
+                                          <button className="btn-addfriend" onClick={() => cancelFriendRequest(selectedUserSearch.email)}>Hủy lời mời</button>
+                                        ) : (
+                                          <button className="btn-addfriend" onClick={() => sendFriendRequest(selectedUserSearch.email)}>Thêm bạn bè</button>
+                                        )}
+                                        <button className="btn-chat">Nhắn tin</button>
+                                      </>
+                                    )}
+                                  </>
                                 )}
-                                <button className="btn-chat">Nhắn tin</button>
                             </div>
                         </div>
                         <div className="info-detail">
@@ -878,6 +1118,8 @@ const Navbar = () => {
 
         </div>
 
+
+        {/* tạo nhóm mới */}
         <Modal isOpen={isModalOpenGroup} onRequestClose={handleCloseModalGroup} className="create-group-modal" overlayClassName="overlay">
           <div className="modal-content">
               <div className="title-modal title-create-group">

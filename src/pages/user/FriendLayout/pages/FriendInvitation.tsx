@@ -49,7 +49,7 @@ const FriendInvitation: React.FC = () => {
               return;
             }
     
-            const response = await axios.get<FriendRequestResponse>(API_ENDPOINTS.friendRequest, {
+            const response = await axios.get<FriendRequestResponse>(API_ENDPOINTS.getFriendRequests, {
               headers: {
                 Authorization: `Bearer ${token}`
               }
@@ -77,7 +77,7 @@ const FriendInvitation: React.FC = () => {
                 console.error('Người dùng chưa đăng nhập hoặc token không hợp lệ');
                 return;
             }
-            const response = await axios.post<FriendRequestResponse>(API_ENDPOINTS.responđFriendRequest, {
+            const response = await axios.post<FriendRequestResponse>(API_ENDPOINTS.respondFriendRequest, {
                 senderEmail,
                 accept,
               }, {

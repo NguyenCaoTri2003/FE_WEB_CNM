@@ -161,11 +161,26 @@
     height: 100%;
     padding: 0px;
     margin-bottom: 0px;
+    position: relative;
 }
 
 .search-input input::placeholder {
     color: #65676b;
 }
+
+ .icon-clear {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    color: #999;
+    font-size: 16px;
+    transition: color 0.2s ease;
+    right: 142px;
+  }
+
+  .icon-clear:hover {
+    color: #333;
+  }
 
 .icon-section {
     display: flex;
@@ -198,7 +213,7 @@
     border-radius: 50%;
 }
 .title-search{
-    margin-bottom: 15px;
+    padding: 10px 0px;
 }
 .title-search p{
     display: flex;

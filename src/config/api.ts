@@ -20,10 +20,11 @@ export const API_ENDPOINTS = {
     //add friend
     search: `${API_BASE_URL}/search`,
     sendFriendRequest: `${API_BASE_URL}/friend-request/send`,
-    responđFriendRequest: `${API_BASE_URL}/friend-request/respond`,
+    respondFriendRequest: `${API_BASE_URL}/friend-request/respond`,
     withdrawFriendRequest: `${API_BASE_URL}/friend-request/withdraw`,
-    friendRequest: `${API_BASE_URL}/friend-requests`,
+    getFriendRequests: `${API_BASE_URL}/friend-requests`,
     getFriends: `${API_BASE_URL}/friends`,
+    unFriend: `${API_BASE_URL}/friends/unfriend`,
 
     //send message
     sendMessage: `${API_BASE_URL}/messages/send`,
