@@ -125,6 +125,15 @@ const FriendInvitation: React.FC = () => {
         }
     };
 
+    if (loading) {
+      return (
+        <div className='spinnerContainer'>
+          <div className='spinner'></div>
+          <p>Vui lòng đợi trong giây lát...</p>
+        </div>
+      );
+    }
+
   return (
     <div className="container-friend-invitation">
       <div className="title-friend-inv">
@@ -170,6 +179,8 @@ const FriendInvitation: React.FC = () => {
           ))
         )}
       </div>
+
+      
 
       {/* Sent Requests Section */}
       <div className="section-title">

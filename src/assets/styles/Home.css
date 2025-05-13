@@ -292,6 +292,7 @@
     justify-content: center;
     font-size: 28px;
     color: #666;
+    cursor: pointer;
 }
 
 .avatar-icon svg {
@@ -455,6 +456,7 @@
     overflow-y: auto; /* Cho phép cuộn nội dung */
     padding: 15px;
     background-color: #ebecf0;
+    position: relative;
 }
 
 .icon-section-chat{
@@ -669,6 +671,15 @@
     align-items: center;
     justify-content: center;
 }
+.input-edit-name{
+    width: 80%;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 13px;
+    color: #000000;
+
+}
 
 .btn-user-type{
     width: 100%;
@@ -814,6 +825,19 @@
     background-color: #f0f2f5;
     position: relative;
 }
+
+.icon-edit-avatar{
+    position: absolute;
+    /* top: 10px; */
+    right: 115px;
+    background: white;
+    border-radius: 50%;
+    padding: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 36px;
+}
+
 
 .avatar-loading {
     position: absolute;
@@ -1125,6 +1149,29 @@
     border-radius: 50%;
     object-fit: cover;
 }
+.avt-user-group-mess{
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    border-radius: 50%;
+    margin-right: 8px;
+    object-fit: cover;
+}
+.avatar-mem {
+    position: relative;
+}
+.avatar-mem svg {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #FFD700;
+  font-size: 8px;
+  padding: 3px 3px;
+  border-radius: 50px;
+  font-weight: bold;
+}
 .list-member-group p{
     font-size: .875rem;
     font-weight: 500;
@@ -1248,4 +1295,97 @@
 .reaction-box span:hover {
     transform: scale(1.2);
     transition: 0.2s ease;
+}
+
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    margin: -15px -11px;
+    background-color: #dbdada;
+    margin-top: 10px;
+    font-style: italic;
+    font-weight: 400;
+    color: #d5d5d5;
+    max-width: fit-content;
+    font-size: 12px;
+    animation: fadeInTyping 0.3s ease-in-out;
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+}
+
+/* Animation nhẹ khi hiện typing */
+@keyframes fadeInTyping {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Đảm bảo căn chỉnh giống tin nhắn đến (received) */
+.message-item-chat.typing-indicator {
+    justify-content: flex-start;
+}
+
+@keyframes fadeInOut {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+}
+.message-options-menu{
+    padding: 8px 12px;
+}
+.message-option:hover{
+    background-color: #f0f2f5;
+}
+.scroll-to-bottom{
+    position: sticky;
+    bottom: -3px;
+    margin-left: 484px;
+    z-index: 100;
+    background: #ffffff;
+    border: 1px solid #ccc;
+    color: #d6d6d6;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+.icon-scroll{
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.scroll-to-bottom:hover{
+    color: #4b93ff;
+    border: #4891ff 1px solid;
+}
+.system-message {
+    text-align: center;
+    font-style: italic;
+    color: gray;
+    margin: 8px 0;
+    font-size: 13px;
+}
+.system-chat{
+    background-color: #fcfcfc;
+    padding: 2px 12px;
+    border-radius: 71px;
+    margin-left: 329px;
+}
+.text-user-leave{
+    font-weight: 600;
+    color: #404040;
 }

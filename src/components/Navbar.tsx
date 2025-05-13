@@ -5,10 +5,12 @@ import '../assets/styles/Navbar.css';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComments, faContactBook, faTools, faCloud, faSearch, faPencil, faPen } from "@fortawesome/free-solid-svg-icons";
 import { API_ENDPOINTS } from '../config/api';
-import { UserOutlined, SettingOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined, UsergroupAddOutlined, CameraOutlined ,UserAddOutlined, CloseOutlined, EllipsisOutlined, MoreOutlined } from "@ant-design/icons";
+import { CameraFilled ,UserOutlined, SettingOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined, UsergroupAddOutlined, CameraOutlined ,UserAddOutlined, CloseOutlined, EllipsisOutlined, MoreOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Modal from "react-modal";
 import { useMessageContext } from "../context/MessagesContext";
+import { useUnreadMessages } from '../context/UnreadMessagesContext';
+import socket from 'routes/socket';
 
 // Định nghĩa interface cho dữ liệu user
 interface UserProfile {
@@ -50,6 +52,8 @@ interface Message {
     name: string;
     message: string;
     time: string;
+    senderEmail?: string;   
+    senderName: string; 
 }
 
 interface Friend {
@@ -57,6 +61,7 @@ interface Friend {
     email: string;
     fullName: string;
     avatar: string; // optional
+    phoneNumber?: string;
 }
 
 interface Group {
@@ -99,7 +104,7 @@ const Navbar = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchedUsers, setSearchedUsers] = useState<any[]>([]);
     const [selectedUserSearch, setSelectedUserSearch] = useState<any>(null);
-    const [recentSearchedUsers, setRecentSearchedUsers] = useState<any[]>([]);
+    const [notFound, setNotFound] = useState(false);
     const [searchResult, setSearchResult] = useState<any | null>(null); 
 
     const [isModalOpenUser, setIsModalOpenUser] = useState(false);
@@ -141,6 +146,12 @@ const Navbar = () => {
 
     const [selectedItem, setSelectedItem] = useState<any>(null);
 
+    const users = JSON.parse(localStorage.getItem("user") || "{}");
+    const currentUserEmail = users.email ;
+
+    const { unreadMessages, removeUnreadMessage, isInitialized  } = useUnreadMessages();
+
+    
 
 
     // console.log("LastMessages context:", lastMessages);
@@ -213,66 +224,24 @@ const Navbar = () => {
     const handleLogout = () => {
         localStorage.removeItem('token');
         navigate('/login');
+        socket.emit('userStatus', { status: 'offline' });
     };
 
-    
-    // const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    //     if (e.key === 'Enter' && searchTerm.trim()) {
-    //       setIsSearching(true);
-    //       try {
-    //         const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, {
-    //           params: { email: searchTerm.trim(), phoneNumber: searchTerm.trim() } 
-    //         });
-      
-    //         if (response.data?.data) {
-    //           const newUser = {
-    //             ...response.data.data,
-    //             searchedAt: new Date().toISOString() // 👉 Lưu thời gian tìm kiếm
-    //         };
 
-    //         if (
-    //             (user?.email && user.email === newUser.email) ||
-    //             (user?.phoneNumber && user.phoneNumber === newUser.phoneNumber)
-    //           ) {
-    //             navigate('/profile');
-    //             return; // Dừng không xử lý tiếp
-    //           }
-      
-    //         const existing = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
-    //         const alreadyExists = existing.some((u: any) => u.email === newUser.email);
-    //         const updated = alreadyExists ? existing : [newUser, ...existing];
-      
-    //         localStorage.setItem("searchedUsers", JSON.stringify(updated));
-    //         setSearchedUsers(updated);
-    //         setSearchTerm('');
-    //     }
-    //       } catch (err) {
-    //         console.error("Tìm không thấy người dùng hoặc lỗi server", err);
-    //       }
-    //     }
-    // };
-
-    // useEffect(() => {
-    //     if (isSearching) {
-    //       const stored = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
-      
-    //       const fiveDaysAgo = new Date();
-    //       fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-      
-    //       const filtered = stored.filter((user: any) => {
-    //         return new Date(user.searchedAt) >= fiveDaysAgo;
-    //       });
-      
-    //       setSearchedUsers(filtered);
-    //     }
-    //   }, [isSearching]);
-     
     const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter' && searchTerm.trim()) {
         try {
-          const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, {
-            params: { email: searchTerm.trim(), phoneNumber: searchTerm.trim() }
-          });
+          
+          // const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, {
+          //   params: { email: searchTerm.trim(), phoneNumber: searchTerm.trim() }
+          // });
+
+          const isEmail = searchTerm.includes('@');
+          const params = isEmail
+            ? { email: searchTerm.trim() }
+            : { phoneNumber: searchTerm.trim() };
+
+          const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, { params });
     
           if (response.data?.data) {
             const newUser = {
@@ -298,10 +267,17 @@ const Navbar = () => {
             // 👉 chỉ hiện kết quả mới tìm
             setSearchResult(newUser);
             setSearchedUsers([]); // Ẩn danh sách cũ
+            setNotFound(false);
             setIsSearching(true);
+          }  else {
+            // Không có data trong response
+            setSearchResult(null);
+            setNotFound(true); 
           }
         } catch (err) {
           console.error("Tìm không thấy người dùng hoặc lỗi server", err);
+          setSearchResult(null);
+          setNotFound(true);
         }
       }
     };
@@ -309,15 +285,34 @@ const Navbar = () => {
     useEffect(() => {
       if (isSearching && !searchResult) {
         const stored = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
-    
+
         const fiveDaysAgo = new Date();
         fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-    
-        const filtered = stored.filter((user: any) => {
-          return new Date(user.searchedAt) >= fiveDaysAgo;
-        });
-    
-        setSearchedUsers(filtered);
+
+        // Cập nhật lại thông tin người dùng mới nhất từ server
+        const fetchUpdatedUsers = async () => {
+          const refreshed = await Promise.all(
+            stored.map(async (user: any) => {
+              try {
+                const isEmail = searchTerm.includes('@');
+                const params = isEmail
+                  ? { email: searchTerm.trim() }
+                  : { phoneNumber: searchTerm.trim() };
+
+                const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, { params });
+                return { ...response.data.data, searchedAt: user.searchedAt };
+              } catch {
+                return user; // fallback nếu bị lỗi
+              }
+            })
+          );
+          const filtered = refreshed.filter(
+            (user: any) => new Date(user.searchedAt) >= fiveDaysAgo
+          );
+          setSearchedUsers(filtered);
+        };
+
+        fetchUpdatedUsers();
       }
     }, [isSearching, searchResult]);
 
@@ -325,6 +320,7 @@ const Navbar = () => {
       setSearchTerm('');
       setSearchResult(null); // 👉 bỏ kết quả hiện tại
       setIsSearching(true);  // 👉 hiển thị lại lịch sử
+      setNotFound(false);
     };
 
     const handleSearchFriend = () => {
@@ -400,6 +396,7 @@ const Navbar = () => {
         // setLoading(false);
       }
     };
+    // 
   
     useEffect(() => {
         fetchFriends();
@@ -525,6 +522,20 @@ const Navbar = () => {
               } else {
                 setHasIncomingRequest(false);  // Người B đã chấp nhận
               }
+              const friend = {
+                email: senderEmail,
+                fullName: "", // Bạn có thể gọi API để lấy thêm thông tin này nếu cần
+                avatar: "",   // Hoặc truyền avatar nếu có
+                userId: "",   // ID của người gửi (nếu có)
+                type: "friend",
+              };
+            
+              // 👉 Thêm vào localStorage
+              const existing = JSON.parse(localStorage.getItem("messagedUsers") || "[]");
+              const isExist = existing.some((f: any) => f.email === senderEmail && f.type === "friend");
+              if (!isExist) {
+                localStorage.setItem("messagedUsers", JSON.stringify([...existing, friend]));
+              }            
             } else {
               console.log("Đã từ chối lời mời kết bạn");
               setHasIncomingRequest(false);  // Người B đã từ chối
@@ -586,40 +597,32 @@ const Navbar = () => {
       }
     }, [selectedUserSearch]);
 
+    const fetchGroups = async () => {
+      try {
+        const token = localStorage.getItem('token'); // Lấy token từ localStorage
+        const response = await axios.get<GroupResponse>(API_ENDPOINTS.getGroups, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.data.success) {
+          setGroups(response.data.data); // Cập nhật state nhóm
+        } else {
+          console.error('Error fetching groups:', response.data.message);
+        }
+      } catch (error) {
+        console.error('Error fetching groups:', error);
+      } finally {
+        // setLoading(false);
+      }
+    };
 
     useEffect(() => {
-
-      const fetchGroups = async () => {
-        try {
-          const token = localStorage.getItem('token'); // Lấy token từ localStorage
-          const response = await axios.get<GroupResponse>(API_ENDPOINTS.getGroups, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-  
-          if (response.data.success) {
-            setGroups(response.data.data); // Cập nhật state nhóm
-          } else {
-            console.error('Error fetching groups:', response.data.message);
-          }
-        } catch (error) {
-          console.error('Error fetching groups:', error);
-        } finally {
-          // setLoading(false);
-        }
-      };
       fetchGroups();
     }, []);
 
-    type CombinedItem = 
-    | (Friend & { type: "friend" })
-    | (Group & { type: "group" });
-
-      const combinedList: CombinedItem[] = [
-        ...friends.map(friend => ({ ...friend, type: "friend" as const })),
-        ...groups.map(group => ({ ...group, type: "group" as const }))
-      ];
+    
 
       
     useEffect(() => {
@@ -682,6 +685,62 @@ const Navbar = () => {
     }
   };
 
+  // Hàm này sẽ được gọi khi người dùng nhấn vào một người dùng trong danh sách
+  type CombinedItem = 
+    | (Friend & { type: "friend" })
+    | (Group & { type: "group" });
+
+  const combinedList: CombinedItem[] = [
+    ...friends.map(friend => ({ ...friend, type: "friend" as const })),
+    ...groups.map(group => ({ ...group, type: "group" as const }))
+  ];
+
+  const updateMessagedUsers = (userOrGroup: CombinedItem) => {
+    const stored = JSON.parse(localStorage.getItem("messagedUsers") || "[]");
+    
+
+    const id = userOrGroup.type === "friend" ? userOrGroup.userId : userOrGroup.groupId;
+
+    const isExist = stored.some((u: any) =>
+      (u.type === "friend" ? u.userId : u.groupId) === id
+    );
+
+    if (!isExist) {
+      const updated = [userOrGroup, ...stored];
+      localStorage.setItem("messagedUsers", JSON.stringify(updated));
+  }
+  };
+  const [combinedLists, setCombinedLists] = useState<CombinedItem[]>([]);
+  
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Kiểu rõ ràng
+      type MessagedUser = 
+        | (Friend & { type: "friend" }) 
+        | (Group & { type: "group" });
+  
+      const stored = JSON.parse(localStorage.getItem("messagedUsers") || "[]") as MessagedUser[];
+  
+      const enrichedList = stored.map((u): CombinedItem | null => {
+        if (u.type === "friend") {
+          const matched = friends.find((f) => f.userId === u.userId);
+          return matched ? { ...matched, type: "friend" as const } : null;
+        } else if (u.type === "group") {
+          const matched = groups.find((g) => g.groupId === u.groupId);
+          return matched ? { ...matched, type: "group" as const } : null;
+        }
+        return null;
+      }).filter((item): item is CombinedItem => item !== null);
+  
+      setCombinedLists(enrichedList);
+    };
+  
+    fetchData();
+  }, [friends, groups]);
+
+if (!isInitialized) return null;
   
     
 
@@ -705,7 +764,13 @@ const Navbar = () => {
           <div className="icons-info">
             <Link to="/user/home">
               <div className="icon-chat">
-                <FontAwesomeIcon icon={faComments} onClick={() => setShowContacts(false)}/>
+                <FontAwesomeIcon icon={faComments} 
+                  onClick={() => {
+                    setShowContacts(false);
+                    fetchFriends();
+                    fetchGroups();
+                  }}
+                />
               </div>
             </Link>
               <div className="icon-contact">
@@ -764,21 +829,6 @@ const Navbar = () => {
       <div className="container-search">
             {/* khung search */}
             <div className="search-section">
-                {/* <div className="search-input">
-                    <FontAwesomeIcon icon={faSearch} />
-                    <input 
-                        type="text"
-                        placeholder="Tìm kiếm" 
-                        value={searchTerm}
-                        // onChange={(e) => setSearchTerm(e.target.value)}
-                        onChange={(e) => {
-                          setSearchTerm(e.target.value);
-                          if (e.target.value === '') setIsSearching(false); 
-                        }}
-                        onFocus={() => setIsSearching(true)}
-                        onKeyDown={handleSearch}
-                    />
-                </div> */}
                 <div className="search-input">
                   <FontAwesomeIcon icon={faSearch} />
                   <input
@@ -801,6 +851,10 @@ const Navbar = () => {
                             setIsSearching(false);
                             setSearchTerm('');
                             setSearchedUsers([]);
+                            setNotFound(false);
+                            fetchFriends(); // Để cập nhật lại danh sách bạn bè
+                            fetchGroups();
+
                         }}>
                             Đóng
                         </button>
@@ -814,31 +868,6 @@ const Navbar = () => {
             </div>
 
             {isSearching ? (
-                // searchedUsers.length > 0 ? (
-                //     <div className="user-search">
-                //         <div className="title-search">
-                //             <p>Tìm gần đây</p>
-                //         </div>
-                //         <div className="list-search">
-                //             {searchedUsers.map((user) => (
-                //                 <div key={user.email} className="user-item" onClick={() => handleUserClick(user)}>
-                //                     <div className="info-user">
-                //                         <img src={user.avatar} alt="User" />
-                //                         <div className="user-name">{user.fullName}</div>
-                //                     </div>
-                //                     <CloseOutlined className="icon-close" onClick={(e) => {
-                //                         e.stopPropagation();
-                //                         handleRemoveUser(user.email);
-                //                     }} />
-                //                 </div>
-                //             ))}
-                //         </div>
-                //     </div>
-                // ) : (
-                //     <div className="user-search">
-                //         <p>Không tìm thấy người dùng nào.</p>
-                //     </div>
-                // )
                 searchResult ? (
                   <div className="user-search">
                     <div className="title-search"><p>Kết quả tìm kiếm</p></div>
@@ -851,13 +880,20 @@ const Navbar = () => {
                       </div>
                     </div>
                   </div>
+                ) : notFound ? (
+                  <div className="user-search">
+                    <div className="title-search"><p>Kết quả tìm kiếm</p></div>
+                    <div className="list-search">
+                      <p style={{ padding: "1rem", color: "gray" }}>Không tìm thấy người dùng nào.</p>
+                    </div>
+                  </div>
                 ) : (
                   <div className="user-search">
                     <div className="title-search"><p>Tìm gần đây</p></div>
                     <div className="list-search">
                       {searchedUsers.length > 0 ? (
-                        searchedUsers.map((user) => (
-                          <div key={user.email} className="user-item" onClick={() => handleUserClick(user)}>
+                        searchedUsers.map((user, index) => (
+                          <div key={user.email + index} className="user-item" onClick={() => handleUserClick(user)}>
                             <div className="info-user">
                               <img src={user.avatar} alt="User" />
                               <div className="user-name">{user.fullName}</div>
@@ -897,20 +933,51 @@ const Navbar = () => {
                                 </div>
                             </div>
                             <div className="list-mess">
-                                {combinedList.map((item) => {
+                                {[...combinedList]
+                                  .sort((a, b) => {
+                                      const idA = a.type === "friend" ? a.email : a.groupId;
+                                      const idB = b.type === "friend" ? b.email : b.groupId;
+
+                                      const timeA = lastMessages[idA]?.time ? new Date(lastMessages[idA].time).getTime() : 0;
+                                      const timeB = lastMessages[idB]?.time ? new Date(lastMessages[idB].time).getTime() : 0;
+
+                                      return timeB - timeA; // tin nhắn mới nhất lên đầu
+                                  }).map((item) => {
                                     const id = item.type === "friend" ? item.email : item.groupId;
                                     const last = lastMessages[id];
+                                    const g = item.type === "group" ? groups.find((group) => group.groupId === item.groupId) : null;
+
                                     const isImage = last?.message?.startsWith("http") && /\.(jpg|jpeg|png|gif)$/i.test(last.message);
                                     const isFile = last?.message?.startsWith("http") && !isImage;
                                     // const isRecall = last?.message === undefined;
 
+                                    // console.log("last Email:", last?.senderEmail);
+                                    // console.log("lastMessages:", last);
+                                    // console.log("id:", id);
+                                    // console.log("item.groupId:", g);
+
+                                    const senderNamePrefix = (() => {
+                                        if (!last?.senderEmail) return "";
+                                        if (last.senderEmail === currentUserEmail) return "Bạn";
+                                        if (item.type === "friend") return item.fullName; // Chat đơn thì dùng tên người kia
+                                        if (item.type === "group") return last.senderEmail || "Người dùng"; // Chat nhóm thì dùng tên người gửi từ tin nhắn
+                                    })();
+
+                                    
+
                                     const messageLabel = isImage
-                                        ? "🖼️ Hình ảnh"
-                                        : isFile
-                                        ? "📎 Tệp tin"
-                                        // : isRecall
-                                        // ? "Tin nhắn đã được thu hồi"
-                                        : last?.message || "Chưa có tin nhắn";
+                                      ? `${senderNamePrefix}: 🖼️ Hình ảnh`
+                                      : isFile
+                                      ? `${senderNamePrefix}: 📎 Tệp tin`
+                                      : `${senderNamePrefix}: ${last?.message || "Chưa có tin nhắn"}`;
+
+                                      // const messageLabel = isImage
+                                      //   ? "🖼️ Hình ảnh"
+                                      //   : isFile
+                                      //   ? "📎 Tệp tin"
+                                      //   // : isRecall
+                                      //   // ? "Tin nhắn đã được thu hồi"
+                                      //   : last?.message || "Chưa có tin nhắn";
                                         
 
                                     const displayTime = last?.time
@@ -941,7 +1008,14 @@ const Navbar = () => {
                                                 setHoveredMessageType(null);  // Xóa loại item khi không hover nữa
                                             }}
                                             onClick={() => {
+                                              // const id = item.type === "friend" ? item.email : item.groupId;
+
+                                              // Xóa khỏi unreadMessages khi click vào
+                                              removeUnreadMessage(id);
+
+                                              updateMessagedUsers(item);
                                               setSelectedItem(item); 
+
                                               if (item.type === "friend") {
                                                 setSelectedUser(item); // chọn user
                                                 navigate("/user/home", { state: { friend: item, groupId: item.userId } });
@@ -987,8 +1061,9 @@ const Navbar = () => {
                                                       : displayTime}
                                                 </span>
                                             </div>
-                                            <div className="message-text">
+                                            <div key={id} className={`message-text ${unreadMessages.has(id) ? 'unread' : ''}`}>
                                                 {messageLabel}
+                                                {unreadMessages.has(id) && <span className="badges">New</span>}
                                             </div>
                                         </div>
                                     </div>

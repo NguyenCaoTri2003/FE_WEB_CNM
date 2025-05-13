@@ -36,13 +36,16 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import AppRoutes from './routes/routes'; 
 import './App.css';
 import { MessagesContext } from './context/MessagesContext';
+import { UnreadMessagesProvider } from './context/UnreadMessagesContext';
 
 const App: React.FC = () => {
   return (
     <Router>
-      <MessagesContext>
-        <AppRoutes />
-      </MessagesContext>
+      <UnreadMessagesProvider>
+        <MessagesContext>
+          <AppRoutes />
+        </MessagesContext>
+      </UnreadMessagesProvider>
     </Router>
   );
 };

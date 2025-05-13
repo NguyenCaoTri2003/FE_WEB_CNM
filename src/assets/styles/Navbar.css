@@ -19,6 +19,7 @@
     min-width: 48px;
     min-height: 48px;
     border-radius: 50%;
+    object-fit: cover;
 }
 .header{
     display: flex;
@@ -211,6 +212,7 @@
     min-width: 48px;
     min-height: 48px;
     border-radius: 50%;
+    object-fit: cover;
 }
 .title-search{
     padding: 10px 0px;
@@ -620,3 +622,16 @@
     color: #888;
     font-style: italic;
   }
+
+.message-text.unread {
+  font-weight: bold;
+  color: #2e89ff; /* Màu xanh cho tin nhắn mới */
+}
+.badges {
+  background-color: #ff5733;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  margin-left: 5px;
+}

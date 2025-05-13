@@ -15,6 +15,11 @@ interface FriendResponse {
   data: Friend[];
 }
 
+interface UnfriendResponse {
+  success: boolean;
+  message: string;
+}
+
 const FriendList = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,9 +80,52 @@ const FriendList = () => {
     );
   };
 
+  // useEffect(() => {
+  //   // Giả lập việc tải dữ liệu hoặc các hoạt động khác
+  //   setTimeout(() => {
+  //     setLoading(false);
+  //   }, 3000); // Sau 3 giây, ẩn loading
+  // }, []);
+
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className='spinnerContainer'>
+        <div className='spinner'></div>
+        <p>Vui lòng đợi trong giây lát...</p>
+      </div>
+    );
   }
+
+  const unfriend = async (friendEmail: string) => {
+    try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            console.error("Token không tồn tại, người dùng chưa đăng nhập");
+            return;
+        }
+
+        const response = await axios.post<UnfriendResponse>(
+            API_ENDPOINTS.unFriend, 
+            { friendEmail },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        if (response.data.success) {
+            console.log("Đã hủy kết bạn thành công");
+
+            setFriends(prevFriends => prevFriends.filter(friends => friends.email !== friendEmail));
+
+        } else {
+            console.error(response.data.message);
+        }
+    } catch (error) {
+        console.error("Lỗi khi hủy kết bạn:", error);
+    }
+  };
 
   return (
     <div className="contact-page">
@@ -133,7 +181,7 @@ const FriendList = () => {
                   className="more-button"
                   onClick={(event) => toggleFriendInfo(friend.email, event)}
                 >
-                  <MoreHorizontal className="more-icon" />
+                  <MoreHorizontal className="more-icon-friend" />
                 </button>
               </div>
             </div>
@@ -155,7 +203,15 @@ const FriendList = () => {
               <li>Phân loại</li>
               <li>Đặt tên gợi nhớ</li>
               <li>Chặn người này</li>
-              <li className="delete-friend">Xóa bạn</li>
+              <li
+                className="delete-friend" 
+                onClick={() => {
+                  if (activeFriend) {
+                    unfriend(activeFriend);
+                    setActiveFriend(null); // ẩn popup
+                  }
+                }}
+              >Xóa bạn</li>
             </ul>
           </div>
         )}

@@ -30,11 +30,13 @@ import React, { createContext, useContext, useState } from "react";
 type LastMessageData = {
   message: string;
   time: Date;
+  senderEmail: string;  
 };
+
 
 type MessageContextType = {
   lastMessages: Record<string, LastMessageData>;
-  updateLastMessage: (email: string, message: string, time: Date) => void;
+  updateLastMessage: (id: string, message: string, time: Date, senderEmail: string) => void;
 };
 
 const MessageContext = createContext<MessageContextType | null>(null);
@@ -45,13 +47,15 @@ export const MessagesContext = ({ children }: { children: React.ReactNode }) => 
     return stored ? JSON.parse(stored) : {};
   });
 
-  const updateLastMessage = (email: string, message: string, time: Date) => {
+ 
+
+  const updateLastMessage = (id: string, message: string, time: Date, senderEmail: string) => {
     const newData = {
       ...lastMessages,
-      [email]: { message, time },
+      [id]: { message, time, senderEmail},
     };
     setLastMessages(newData);
-    localStorage.setItem("lastMessages", JSON.stringify(newData)); // lưu lại vĩnh viễn
+    localStorage.setItem("lastMessages", JSON.stringify(newData));
   };
 
   return (

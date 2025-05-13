@@ -198,10 +198,36 @@
     background-color: #f3f4f6;
   }
   
-  .more-icon {
+  .more-icon-friend {
     height: 20px;
     width: 20px;
     color: #6b7280;
+  }
+  .friend-info-popup{
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 2px;
+  }
+  .friend-info-popup ul{
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .friend-info-popup li{
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  .friend-info-popup li:hover{
+    background-color: #d2d2d2;
   }
   
   /* Media queries for responsive design */
@@ -220,4 +246,71 @@
       width: 320px;
     }
   }
-   
+
+.spinnerContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  position: fixed; /* Đảm bảo lớp phủ nằm trên cùng */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5); /* Lớp phủ mờ */
+  z-index: 9999; /* Đảm bảo lớp phủ luôn ở trên */
+  flex-direction: column;
+  gap: 16px; /* Khoảng cách giữa spinner và thông báo */
+}
+
+.spinner {
+  position: relative;
+  width: 80px; /* Đặt kích thước vòng xoay chính */
+  height: 80px;
+  border-radius: 50%;
+  animation: rotate 2s linear infinite; /* Thêm hiệu ứng quay vòng chính */
+}
+
+.spinner::before, .spinner::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(52, 152, 219, 0.3);
+  animation: rotateRing 1.5s linear infinite;
+}
+
+.spinner::before {
+  width: 100px;
+  height: 100px;
+  background: rgba(52, 152, 219, 0.5);
+  animation-duration: 3s;
+}
+
+.spinner::after {
+  width: 120px;
+  height: 120px;
+  background: rgba(52, 152, 219, 0.2);
+  animation-duration: 4s;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotateRing {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-360deg); /* Quay ngược chiều để tạo sự đối xứng */
+  }
+}

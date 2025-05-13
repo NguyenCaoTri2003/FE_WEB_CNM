@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Form, Input, Button, message, Card, Typography, Alert } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { API_ENDPOINTS } from '../config/api';
@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthResponse, ErrorResponse } from '../types/api';
 import Captcha, { CaptchaRef } from './Captcha';
 import '../assets/styles/Login.css';
+import socket from "../routes/socket"
 
 const { Title } = Typography;
 
@@ -84,7 +85,14 @@ const Login: React.FC = () => {
             
             message.success('Đăng nhập thành công!');
             localStorage.setItem('token', response.data.token);
+            const user = response.data.user;
             localStorage.setItem('user', JSON.stringify(response.data.user));
+            // 👉 Emit trạng thái online sau khi đăng nhập thành công
+            socket.emit("userStatus", {
+                status: "online",
+                email: user.email
+            });
+            
             navigate('/user/home');
         } catch (error: any) {
             const errorResponse = error.response?.data as ErrorResponse;
@@ -101,6 +109,18 @@ const Login: React.FC = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.email) {
+            // Emit trạng thái online khi người dùng đăng nhập
+            socket.emit("userStatus", {
+                status: "online",
+                email: user.email
+            });
+            console.log("User status emitted: ", user.email);
+        }
+    }, []);
 
     return (
         <div className="login-container">

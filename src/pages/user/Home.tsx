@@ -3,16 +3,19 @@ import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import '../../assets/styles/Home.css';
 import { useState, useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faLaughBeam, faImage, faFileCirclePlus, faAddressCard, faUserGroup } from "@fortawesome/free-solid-svg-icons";
+import { faSearch, faLaughBeam, faImage, faFileCirclePlus, faAddressCard, faUserGroup, faKey, faPencil } from "@fortawesome/free-solid-svg-icons";
 //import Modal from "react-modal";
-import { UsergroupAddOutlined, LeftOutlined, SettingOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, DeleteOutlined, DownloadOutlined , BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled, UserOutlined, SendOutlined, FilePdfOutlined, FileWordOutlined, FileExcelOutlined, FileZipOutlined, FileTextOutlined,PaperClipOutlined, CloseOutlined} from "@ant-design/icons";
+import { UsergroupAddOutlined, LeftOutlined, SettingOutlined, MoreOutlined, VideoCameraOutlined, MenuFoldOutlined, DeleteOutlined, DownloadOutlined , BellOutlined, PushpinOutlined, EditOutlined, CaretRightFilled, CaretDownFilled, UserOutlined, SendOutlined, FilePdfOutlined, FileWordOutlined, FileExcelOutlined, FileZipOutlined, FileTextOutlined,PaperClipOutlined, CloseOutlined, CameraFilled, DownOutlined} from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import axios from 'axios';
 import { API_ENDPOINTS } from "config/api";
-import { Button, Modal } from "antd";
+import { Button, Input, Modal } from "antd";
 import 'antd/dist/reset.css';
-import { useMessageContext } from "../../context/MessagesContext"
+import { useMessageContext } from "../../context/MessagesContext";
+import { useUnreadMessages } from '../../context/UnreadMessagesContext'; 
+import socket from "../../routes/socket";
+import EmojiPicker from 'emoji-picker-react';
 
 // Modal.setAppElement("#root");
 // interface Reaction {
@@ -64,6 +67,7 @@ interface Friend {
     email: string;
     fullName: string;
     avatar: string; // optional
+    phoneNumber?: string; // optional
 }
 interface FriendResponse {
     success: boolean;
@@ -88,12 +92,15 @@ type Reaction = {
 interface BaseMessage {
     messageId: string;
     senderEmail: string;
+    receiverEmail?: string; 
     content: string;
     createdAt: string;
-    status: 'send' | 'received' | 'recalled';
+    status: 'send' | 'received' | 'recalled' | 'read';
     type?: 'text' | 'image' | 'file';
     isRecalled?: boolean;
     reactions?: Reaction[];
+    isSystem?: boolean;
+    action?: string; 
 }
 
 export interface Message extends BaseMessage {
@@ -168,6 +175,7 @@ type UploadAvatarResponse = {
     user: {
         fullName?: string;
         email: string;
+        avatar?: string;
     };
 };
   
@@ -215,6 +223,7 @@ const Home = () => {
     const [showModal, setShowModal] = useState(false);
 
     const { updateLastMessage } = useMessageContext()!;
+    const { addUnreadMessage } = useUnreadMessages();
 
     //hiển thị danh sách thành viên nhóm
     const [showList, setShowList] = useState(false);
@@ -235,11 +244,73 @@ const Home = () => {
     const [openMenuUserId, setOpenMenuUserId] = useState<string | null>(null);
 
     const [isEditingName, setIsEditingName] = useState(false);
+    const [isEditNameModalOpen, setIsEditNameModalOpen] = useState(false);
     const [editedName, setEditedName] = useState("");
 
-    const [userMap, setUserMap] = useState<{ [key: string]: string }>({});
+    const [userMap, setUserMap] = useState<{ [key: string]: { name: string; avatar: string } }>({});
+
+    const [friendStatuses, setFriendStatuses] = useState<{ [email: string]: boolean }>({});
+
+    const [isTyping, setIsTyping] = useState(false);
+    const [typingUser, setTypingUser] = useState<string | null>(null);
+
+    const [loading, setLoading] = useState(false);
+
+    const [showOptions, setShowOptions] = useState(false);
+    const [openOptionsMsgId, setOpenOptionsMsgId] = useState<string | null>(null);
+    //const optionsRef = useRef<HTMLDivElement>(null);
+    const [selectedMessageId, setSelectedMessageId] = useState(null);
+
+    const optionsRef = useRef<HTMLDivElement>(null); // div chứa menu
+    const moreButtonRef = useRef<HTMLDivElement>(null); // dấu ba chấm
+
+    const hideOptionsTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
+    const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [isHoveringEmojiPicker, setIsHoveringEmojiPicker] = useState(false);
+
+    const [isModalOpenUser, setIsModalOpenUser] = useState(false);
+
+    const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+
+
+
+
+
+    
 
     const reactionsList = ['👍', '❤️', '😂', '😮', '😢', '👎'];
+
+    const handleUserClick = (user: any) => {
+        setSelectedUser(user);
+        setIsModalOpenUser(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpenUser(false);
+    };
+
+    useEffect(() => {
+        const container = chatContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
+            setShowScrollToBottom(!isAtBottom);
+        };
+
+        container.addEventListener("scroll", handleScroll);
+        return () => {
+            container.removeEventListener("scroll", handleScroll);
+        };
+    }, []);
+
+    const scrollToBottomAll = () => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
 
     const handleReactMessage = async (messageId: string, reaction: string) => {
         try {
@@ -264,7 +335,73 @@ const Home = () => {
             console.error('Lỗi khi gửi reaction:', error);
         }
     };
+
+    useEffect(() => {
+        if (showEmojiPicker) {
+            const timeout = setTimeout(() => {
+                if (!isHoveringEmojiPicker) {
+                    setShowEmojiPicker(false);
+                }
+            }, 5000); // sau 5 giây nếu không hover thì đóng
+
+            return () => clearTimeout(timeout);
+        }
+    }, [showEmojiPicker, isHoveringEmojiPicker]);
+
+    const handleEmojiSelect = (emoji: string) => {
+        setMessage((prev) => prev + emoji);
+        //setShowEmojiPicker(false);
+        setShowEmojiPicker(true);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                emojiPickerRef.current &&
+                !emojiPickerRef.current.contains(event.target as Node)
+            ) {
+                setShowEmojiPicker(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     
+
+    
+    // useEffect(() => {
+    //     const handleClickOutside = (event: MouseEvent) => {
+    //         if (optionsRef.current && !optionsRef.current.contains(event.target as Node)) {
+    //         setOpenOptionsMsgId(null);
+    //         }
+    //     };
+    //     document.addEventListener('mousedown', handleClickOutside);
+    //     return () => {
+    //         document.removeEventListener('mousedown', handleClickOutside);
+    //     };
+    // }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                optionsRef.current &&
+                !optionsRef.current.contains(event.target as Node) &&
+                moreButtonRef.current &&
+                !moreButtonRef.current.contains(event.target as Node)
+            ) {
+                setOpenOptionsMsgId(null); // ẩn menu nếu click ngoài
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
 
 
@@ -379,11 +516,31 @@ const Home = () => {
         setShowList(false);
     }
 
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isTypingRef = useRef(false);
+
     const handleInput = () => {
         if (textAreaRef.current) {
             textAreaRef.current.style.height = "auto";
             textAreaRef.current.style.height = `${textAreaRef.current.scrollHeight}px`;
         }
+        if (!isTypingRef.current) {
+            socket.emit('typingStart', {
+                receiverEmail: selectedUser?.email
+            });
+            isTypingRef.current = true;
+        }
+
+        if (typingTimeoutRef.current) {
+            clearTimeout(typingTimeoutRef.current);
+        }
+
+        typingTimeoutRef.current = setTimeout(() => {
+            socket.emit('typingStop', {
+                receiverEmail: selectedUser?.email
+            });
+            isTypingRef.current = false;
+        }, 1500);
     };
 
     const scrollToBottom = () => {
@@ -404,6 +561,12 @@ const Home = () => {
             scrollToBottom();
         }
     }, [chatMessages]);
+
+    useEffect(() => {
+    if (bottomRef.current) {
+        bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+    }, [selectedUser]);
 
     // Gửi tin nhắn
 
@@ -445,6 +608,11 @@ const Home = () => {
     //         console.error('Lỗi khi gửi tin nhắn:', error);
     //     }
     // };
+
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const currentUserId = user.userId || user.id;
+    const currentUserEmail = user.email || user.userId;
+    // console.log('currentUserEmail:', currentUserEmail);
     
     //gửi tin nhắn đơn và nhóm
     const sendMessage = async () => {
@@ -471,7 +639,18 @@ const Home = () => {
                     const sentMsg = response.data.data;
                     setChatMessages(prev => [...prev, sentMsg]);
                     const timeSent = new Date(sentMsg.createdAt);
-                    updateLastMessage(selectedUser.email, sentMsg.content, timeSent);
+                    const key = selectedUser.type === 'friend' ? selectedUser.email : selectedUser.groupId;
+                    updateLastMessage(key, sentMsg.content, timeSent, sentMsg.senderEmail);
+                    socket.emit("groupMessage", {
+                        groupId: selectedUser.groupId,
+                        message: {
+                            messageId: sentMsg.messageId,
+                            content: sentMsg.content,
+                            createdAt: sentMsg.createdAt,
+                            senderEmail: sentMsg.senderEmail,
+                        }
+                    });
+                    //updateLastMessage(selectedUser.email, sentMsg.content, timeSent);
                     setMessage('');
                     scrollToBottom();
                 }
@@ -493,7 +672,16 @@ const Home = () => {
                     const sentMsg = response.data.data;
                     setChatMessages(prev => [...prev, sentMsg]);
                     const timeSent = new Date(sentMsg.createdAt);
-                    updateLastMessage(selectedUser.email, sentMsg.content, timeSent);
+                    updateLastMessage(selectedUser.email, sentMsg.content, timeSent, sentMsg.senderEmail);
+                    socket.emit("newMessage", {
+                        receiverEmail: selectedUser.email,
+                        message: {
+                            content: sentMsg.content,
+                            createdAt: sentMsg.createdAt,
+                            messageId: sentMsg.messageId, 
+                            senderEmail: sentMsg.senderEmail,
+                        }
+                    });
                     setMessage('');
                     scrollToBottom();
                 }
@@ -502,6 +690,45 @@ const Home = () => {
             console.error('Lỗi khi gửi tin nhắn:', error);
         }
     };
+
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on("newMessage", (message: any) => {
+            console.log('📩Backend received newMessage:', message);
+            const { senderEmail, content, createdAt } = message;
+            updateLastMessage(senderEmail, content, new Date(createdAt), senderEmail);
+            console.log("📩 Nhận tin nhắn đơn từ:", senderEmail);
+            console.log("📩 Nội dung:", content);
+            const from = message.senderEmail;
+            const to = message.receiverEmail; // nếu có
+
+            // Nếu currentUser là người nhận:
+            if (from !== currentUserEmail) {
+                addUnreadMessage(from); // chính xác hơn
+            }
+        });
+
+        socket.on("newGroupMessage", (data: any) => {
+            const { groupId, message } = data;
+
+            // Nếu chính mình gửi thì bỏ qua vì đã xử lý ở sendMessage
+            if (message.senderEmail === currentUserEmail) return;
+
+            updateLastMessage(groupId, message.content, new Date(message.createdAt), message.senderEmail);
+            if (selectedUser?.groupId !== groupId) {
+                addUnreadMessage(groupId); // Thêm vào context khi tin nhắn nhóm mới đến
+            }
+            console.log("📩 Nhận tin nhắn nhóm từ:", message.senderEmail);
+            console.log("📩 Nội dung:", message.content);
+            
+        });
+
+        return () => {
+            socket.off("newMessage");
+            socket.off("newGroupMessage");
+        };
+    }, [socket, updateLastMessage, currentUserEmail]);
     
     //tải tin nhắn
     useEffect(() => {
@@ -538,7 +765,7 @@ const Home = () => {
                         const lastMsg = messages[messages.length - 1];
                         const isReceiver = lastMsg.senderEmail !== myEmail;
                         const friendEmail = isReceiver ? lastMsg.senderEmail : lastMsg.receiverEmail;
-                        updateLastMessage(friendEmail, lastMsg.content, new Date(lastMsg.createdAt));
+                        updateLastMessage(friendEmail, lastMsg.content, new Date(lastMsg.createdAt), lastMsg.senderEmail);
                     }
                 }
             } catch (error) {
@@ -586,9 +813,6 @@ const Home = () => {
     //     const interval = setInterval(fetchMessages, 3000); // Mỗi 3s tải lại
     //     return () => clearInterval(interval);
     // }, [selectedUser]);
-
-    
-    
 
     function timeAgo(createdAt: string | Date): string {
         const now = new Date();
@@ -724,26 +948,30 @@ const Home = () => {
     //     }
     // };
 
-    const handleRecallMessage = async (messageId?: string, groupId?: string) => {
+    const handleRecallMessage = async (
+        messageId?: string,
+        groupId?: string,
+        isGroup: boolean = false
+    ) => {
         const token = localStorage.getItem('token');
         if (!messageId) {
             console.warn("messageId bị thiếu khi recall");
             return;
         }
-    
+
         try {
-            const url = groupId
-                ? API_ENDPOINTS.recallGroupMessage(groupId, messageId)
+            const url = isGroup
+                ? API_ENDPOINTS.recallGroupMessage(groupId!, messageId)
                 : API_ENDPOINTS.recall(messageId);
-    
+
             const response = await axios.put(url, null, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             });
-    
+
             const updatedMsg = (response.data as { data: Message }).data;
-    
+
             setChatMessages((prevMessages) =>
                 prevMessages.map((msg) =>
                     msg.messageId === updatedMsg.messageId ? updatedMsg : msg
@@ -753,6 +981,7 @@ const Home = () => {
             console.error('Lỗi khi thu hồi tin nhắn:', err.response?.data || err.message);
         }
     };
+
     
     
     
@@ -827,42 +1056,48 @@ const Home = () => {
     // console.log("Danh sách friends:", friends);
     // console.log("Danh sách groupMembers:", groupMembers);
 
+    
+
     const handleAddMembers = async () => {
+        setLoading(true);
         if (selectedFriends.length === 0) {
-          alert("Bạn chưa chọn thành viên nào để thêm!");
-          return;
+        alert("Bạn chưa chọn thành viên nào để thêm!");
+        return;
         }
-      
+    
         try {
-          const token = localStorage.getItem("token");
-          if (!token) {
+        const token = localStorage.getItem("token");
+        if (!token) {
             console.error("Chưa đăng nhập");
             return;
-          }
-      
-          // Dùng Promise.all để thêm nhiều thành viên cùng lúc
-          await Promise.all(
-            selectedFriends.map(async (memberId) => {
-              await axios.post(`${API_ENDPOINTS.addGroupMembers(friend.groupId)}`, 
-                { memberId },
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-            })
-          );
-      
-          // Sau khi thêm thành công, cập nhật groupMembers
-          setGroupMembers((prev) => [...prev, ...selectedFriends]);
-      
-          // Xóa danh sách selectedFriends sau khi thêm xong
-          setSelectedFriends([]);
-          fetchGroupMembers(); // Tải lại danh sách thành viên nhóm
-            setIsModalOpenGroup(false);
-      
-          alert("Thêm thành viên thành công!");
+        }
+        await axios.post(`${API_ENDPOINTS.addGroupMembers(friend.groupId)}`, 
+            { memberIds: selectedFriends },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+    
+        // Sau khi thêm thành công, cập nhật groupMembers
+        setGroupMembers((prev) => [...prev, ...selectedFriends]);
+
+        selectedFriends.forEach((memberId) => {
+            socket.emit('addMemberGroup', { groupId: friend.groupId, userId: memberId });
+            
+        });
+    
+        // Xóa danh sách selectedFriends sau khi thêm xong
+        setSelectedFriends([]);
+        fetchGroupMembers(); // Tải lại danh sách thành viên nhóm
+        setIsModalOpenGroup(false);
+        setIsSidebarOpen(false);
+        setShowList(false);
+        
+        alert("Thêm thành viên thành công!");
       
         } catch (error) {
           console.error("Lỗi khi thêm thành viên:", error);
           alert("Có lỗi xảy ra khi thêm thành viên!");
+        } finally {
+          setLoading(false);
         }
     };
 
@@ -883,6 +1118,7 @@ const Home = () => {
     };
 
     const handleRemoveMember = async (groupId?: string, memberId?: string) => {
+        setLoading(true);
         try {
             const token = localStorage.getItem("token");
             if (!token) {
@@ -915,16 +1151,20 @@ const Home = () => {
                 fetchGroupMembers(); 
                 setSelectedUserModal('');
                 alert("Xóa thành viên thành công!");
+                setIsSidebarOpen(false);
             } else {
                 alert('Xóa thành viên thất bại');
             }
         } catch (error: any) {
             console.error("Lỗi khi xóa thành viên:", error.response?.data?.message || error.message);
             alert(error.response?.data?.message || "Xóa thành viên thất bại!");
+        } finally {
+            setLoading(false);
         }
     };
     
     const addAdminToGroup = async (groupId: string, adminId: string) => {
+        setLoading(true);
         try {
             const token = localStorage.getItem("token");
             if (!token) {
@@ -933,8 +1173,8 @@ const Home = () => {
             }
     
             const response = await axios.post<ApiResponseAdmin>(
-                `${API_ENDPOINTS.addAdmin(groupId)}`,  // <-- chú ý route nè
-                { adminId },
+                `${API_ENDPOINTS.addAdmin(groupId)}`, 
+                { memberId: adminId },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -953,10 +1193,13 @@ const Home = () => {
         } catch (error: any) {
             console.error("Lỗi khi thêm admin:", error.response?.data?.message || error.message);
             alert(error.response?.data?.message || "Thêm admin thất bại!");
+        } finally {
+            setLoading(false);
         }
     };
 
     const handleRemoveAdmin = async (groupId?: string, adminId?: string) => {
+        setLoading(true);
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -975,7 +1218,7 @@ const Home = () => {
                         Authorization: `Bearer ${token}`,
                     },
                     params: {
-                        adminId: adminId, // Gửi memberId qua params
+                        memberId: adminId, // Gửi memberId qua params
                     },
                 }
             );
@@ -990,18 +1233,97 @@ const Home = () => {
         } catch (error: any) {
             console.error('Lỗi khi xóa admin:', error.response?.data?.message || error.message);
             alert(error.response?.data?.message || 'Xóa quyền admin thất bại!');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    const currentUserId = user.userId || user.id;
+    const addDeputyToGroup = async (groupId: string, memberId: string) => {
+        setLoading(true); 
+
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                console.error("Chưa đăng nhập");
+                return;
+            }
+
+            const response = await axios.post<ApiResponseAdmin>( 
+                `${API_ENDPOINTS.addDeputy(groupId)}`, 
+                { memberId: memberId }, 
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
+                }
+            );
+
+            if (response.data.success) {
+                alert('Đã thêm thành viên thành phó trưởng nhóm!');
+                fetchGroupMembers(); 
+            } else {
+                alert('Thêm phó trưởng nhóm thất bại!');
+            }
+        } catch (error: any) {
+            console.error("Lỗi khi thêm phó trưởng nhóm:", error.response?.data?.message || error.message);
+            alert(error.response?.data?.message || "Thêm phó trưởng nhóm thất bại!");
+        } finally {
+            setLoading(false); 
+        }
+    };
+
+    const handleRemoveDeputy = async (groupId?: string, deputyId?: string) => {
+        setLoading(true); 
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error('Chưa đăng nhập');
+                return;
+            }
+            if (!groupId || !deputyId) {
+                console.error('Thiếu thông tin groupId hoặc deputyId');
+                return;
+            }
+
+            // Gửi yêu cầu DELETE đến API để xóa phó trưởng nhóm
+            const response = await axios.delete<ApiResponse>(
+                `${API_ENDPOINTS.removeDeputy(groupId)}`, // API endpoint của bạn để xóa phó trưởng nhóm
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                    params: {
+                        memberId: deputyId, // Gửi memberId (ID của phó trưởng nhóm cần xóa)
+                    },
+                }
+            );
+
+            if (response.data.success) {
+                alert('Đã xóa phó trưởng nhóm thành công!');
+                // Optional: Cập nhật lại danh sách thành viên nhóm
+                fetchGroupMembers(); 
+            } else {
+                alert(response.data.message || 'Xóa phó trưởng nhóm thất bại!');
+            }
+        } catch (error: any) {
+            console.error('Lỗi khi xóa phó trưởng nhóm:', error.response?.data?.message || error.message);
+            alert(error.response?.data?.message || 'Xóa phó trưởng nhóm thất bại!');
+        } finally {
+            setLoading(false); // Đảm bảo rằng loading được tắt khi API đã hoàn thành
+        }
+    };
+
+
+    
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
       
         const formData = new FormData();
-        formData.append('avatarUrl', file);
+        formData.append('file', file);
+
         const token = localStorage.getItem('token');
       
         try {
@@ -1021,20 +1343,24 @@ const Home = () => {
 
       
     const saveEditedName = async () => {
+        setLoading(true);
         const token = localStorage.getItem('token');
 
         try {
-        const res = await axios.put(`${API_ENDPOINTS.updateGroup(groupId)}`, { name: editedName },{
+        const res = await axios.put(`${API_ENDPOINTS.updateGroupInfo(groupId)}`, { name: editedName },{
             headers: {
                 Authorization: `Bearer ${token}`,
             },
         });
         console.log('Name updated', res.data);
-        setIsEditingName(false);
         setSelectedUser((prev: any) => ({ ...prev, name: editedName }));
+        setIsEditNameModalOpen(false)
+        window.location.reload();
         // reload group info nếu cần
         } catch (error) {
         console.error('Failed to update name', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -1049,8 +1375,12 @@ const Home = () => {
                 }
             });
             const name = response.data.user.fullName || response.data.user.email;
+            const avatar = response.data.user.avatar || 'https://cdn.pixabay.com/photo/2025/03/19/13/20/trees-9480700_1280.jpg'; 
     
-            setUserMap(prev => ({ ...prev, [senderEmail]: name }));
+            setUserMap(prev => ({ 
+                ...prev, 
+                [senderEmail]: { name, avatar } 
+            }));
         } catch (error) {
             console.error("Lỗi khi lấy tên người gửi:", error);
         }
@@ -1066,8 +1396,8 @@ const Home = () => {
     
     const deleteGroup = async () => {
         try {
-        const token = localStorage.getItem('token');
-          const res = await axios.delete<ApiResponse>(`${API_ENDPOINTS.deleteGroup(groupId)}`, {
+            const token = localStorage.getItem('token');
+            const res = await axios.delete<ApiResponse>(`${API_ENDPOINTS.deleteGroup(groupId)}`, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -1083,10 +1413,207 @@ const Home = () => {
           console.error('Lỗi xóa nhóm:', error);
           alert('Xảy ra lỗi khi xóa nhóm');
         }
-      };
+    };
+
+    const handleLeaveGroup = async (groupId: string) => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+            alert('Vui lòng đăng nhập để thực hiện thao tác này.');
+            return;
+            }
+
+            const response = await axios.post<ApiResponse>(`${API_ENDPOINTS.leaveGroup(groupId)}`, null, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            });
+
+            if (response.data.success) {
+                alert('Bạn đã rời khỏi nhóm thành công!');
+                console.log("📤 Emit leaveGroupWeb", { groupId, userEmail: currentUserEmail });
+                socket.emit('leaveGroupWeb', { groupId, userEmail: currentUserEmail });
+               
+            // Cập nhật lại danh sách nhóm hoặc chuyển hướng người dùng
+            // Ví dụ: fetchUserGroups();
+            } else {
+                alert(response.data.message || 'Rời nhóm thất bại!');
+            }
+        } catch (error: any) {
+            console.error('Lỗi khi rời nhóm:', error.response?.data?.message || error.message);
+            alert(error.response?.data?.message || 'Rời nhóm thất bại!');
+        } finally {
+            setLoading(false);
+        }
+    };
       
+    useEffect(() => {
+        socket.on('messageRead', (data: { messageId: string }) => {
+            const { messageId } = data;
+            setChatMessages(prev =>
+                prev.map(msg =>
+                    msg.messageId === messageId ? { ...msg, status: 'read' } : msg
+                )
+            );
+        });
     
-      
+        return () => {
+            socket.off('messageRead');
+        };
+    }, []);
+
+    useEffect(() => {
+        const unreadMessages = chatMessages.filter(
+            msg => msg.status !== 'read' && msg.receiverEmail === user.email
+        );
+
+        const token = localStorage.getItem('token');
+    
+        unreadMessages.forEach(msg => {
+            fetch(`${API_ENDPOINTS.markAsRead(msg.messageId)}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            });
+        });
+    }, [chatMessages]);
+
+    // useEffect(() => {
+    //     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    //     // 1. Lắng nghe sự kiện trước
+    //     socket.on('friendStatusUpdate', (data: { email: string; online: boolean }) => {
+    //         const { email, online } = data;
+    //         console.log('📥 Cập nhật trạng thái từ BE:', email, online);
+    //         setFriendStatuses(prev => ({
+    //             ...prev,
+    //             [email.toLowerCase().trim()]: online
+    //         }));
+    //     });
+
+    //     console.log("📡 Emit userStatus từ FE:", {
+    //         status: "online",
+    //         email: user.email
+    //     });
+    
+    //     // 2. Sau khi lắng nghe xong thì mới emit
+    //     socket.emit("userStatus", {
+    //         status: "online",
+    //         email: user.email
+    //     });
+    //     console.log("✅ friendStatuses:", friendStatuses);
+    
+    //     return () => {
+    //         socket.off('friendStatusUpdate');
+    //     };
+        
+    // }, [friendStatuses]);
+    
+    // console.log("📌 selectedUser.email:", selectedUser?.email);
+
+    useEffect(() => {
+        // Lắng nghe sự kiện friendStatusUpdate từ server
+        socket.on('friendStatusUpdate', (data: { email: string; online: boolean }) => {
+            const { email, online } = data;
+            console.log('📥 Cập nhật trạng thái từ BE:', email, online); 
+            setFriendStatuses(prev => ({
+                ...prev,
+                [email.toLowerCase().trim()]: online
+            }));
+        });
+        console.log("📡 Emit userStatus từ FE:",   {
+            status: "online",
+            email: user.email,
+            friendStatuses
+        });
+        // Cleanup khi component bị unmount
+        return () => {
+            socket.off('friendStatusUpdate');
+        };
+    }, []);
+
+    useEffect(() => {
+        socket.on('typingStart', (data: { senderEmail: string }) => {
+            if (data.senderEmail === selectedUser?.email) {
+                setIsTyping(true);
+                setTypingUser(data.senderEmail);
+                console.log("Người đang nhập:", data.senderEmail);
+            }
+        });
+
+        socket.on('typingStop', (data: { senderEmail: string }) => {
+            if (data.senderEmail === selectedUser?.email) {
+                setIsTyping(false);
+                setTypingUser(null);
+                console.log("Người đã ngừng nhập:", data.senderEmail);
+            }
+        });
+
+        return () => {
+            socket.off('typingStart');
+            socket.off('typingStop');
+        };
+    }, [selectedUser]);
+
+
+    useEffect(() => {
+        if (!groupId) return;
+
+        const handleGroupMessage = (msg: any) => {
+            console.log('🔥 groupID:', groupId);
+            console.log('🔥 Nhận được groupMessageLeave:', msg);
+
+            if (msg.groupId === groupId && msg.type === 'system') {
+                setChatMessages(prev => {
+                const updated = [...prev, { ...msg, isSystem: true, messageId: `system-${Date.now()}-${Math.random()}` }];
+                console.log('✅ Chat messages sau khi thêm system message:', updated);
+                return updated;
+                });
+            }
+            console.log('🔥 Sau khi dùng hàm:', msg);
+        };
+
+        
+
+        socket.on('groupMessageLeave', handleGroupMessage);
+
+        return () => {
+            socket.off('groupMessageLeave', handleGroupMessage);
+        };
+    }, [groupId]);
+
+    useEffect(() => {
+        if (!groupId) return;
+        const handleJoinMessage = (msg: any) => {
+            if (msg.groupId === groupId && msg.type === 'system') {
+                setChatMessages(prev => [
+                    ...prev,
+                    {
+                        ...msg,
+                        isSystem: true,
+                        messageId: `system-${Date.now()}-${Math.random()}`
+                    }
+                ]);
+            }
+        };
+        socket.on('groupMessageJoin', handleJoinMessage);
+        return () => {
+            socket.off('groupMessageJoin', handleJoinMessage);
+        };
+    }, [groupId]);
+
+    
+
+    if (loading) {
+      return (
+        <div className='spinnerContainer'>
+          <div className='spinner'></div>
+          <p>Vui lòng đợi trong giây lát...</p>
+        </div>
+      );
+    }
 
     return (
         <div className="home-container">
@@ -1095,23 +1622,32 @@ const Home = () => {
                     <div className={`body-chat ${isSidebarOpen ? "shrink" : ""}`}>
                         <div className="header-chat">
                             <div className="info-chat">
-                                <div className="avatar-icon">
+                                <div className="avatar-icon" onClick={selectedUser.type === "friend" ? () => handleUserClick(selectedUser) : undefined}>
                                     <img
                                         src={selectedUser.avatar || "https://cdn.pixabay.com/photo/2025/03/18/17/03/dog-9478487_1280.jpg"}
                                         alt={selectedUser.type === "friend" ? selectedUser.fullName : selectedUser.name}
                                     />
                                 </div>
                                 <div className="title-chat">
-                                    <span className="title-name">{selectedUser.type === "friend" ? selectedUser.fullName : selectedUser.name}</span>
-                                    <span className="title-status">Đang hoạt động</span>
+                                    <span className="title-name">
+                                        {selectedUser.type === "friend" ? selectedUser.fullName : selectedUser.name}
+                                    </span>
+                                    <span className="title-status">
+                                        {selectedUser.type === 'friend' && selectedUser.email && (
+                                            <span className="title-status">
+                                                {friendStatuses[selectedUser.email] ? 'Đang hoạt động' : 'Không hoạt động'}
+                                            </span>
+                                        )}
+                                    </span>
                                 </div>
                             </div>
                             <div className="icon-section-chat">
-                                <UsergroupAddOutlined className="icon-addgroup"/>
+                                {/* <UsergroupAddOutlined className="icon-addgroup"/> */}
                                 <VideoCameraOutlined className="icon-videochat"/>
                                 <MenuFoldOutlined className="icon-menufold" onClick={() => {
                                     setIsSidebarOpen(!isSidebarOpen);
                                     closeListMember();
+                                    fetchGroupMembers();
                                 }} />
                             </div>
                         </div>
@@ -1136,21 +1672,60 @@ const Home = () => {
                                 const messageClass = isGroupChat
                                 ? (isOwnMessage ? 'sent' : 'received')
                                 : (msg.senderEmail === selectedUser.email ? 'received' : 'sent');
-                                
 
+                                //console.log("msg", msg);
+                                if (msg.isSystem) {
+                                    return (
+                                        <div key={msg.messageId} className="message-item-chat system-chat">
+                                            <div className="system-message">
+                                                {userMap[msg.content] ? (
+                                                    <>
+                                                        <strong>{userMap[msg.content].name}</strong>{" "}
+                                                        {msg.action === 'join' ? "đã tham gia nhóm."  : "đã rời khỏi nhóm."}
+                                                    </>
+                                                ) : (
+                                                msg.content // Nếu chưa có tên hiển thị email
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                
                                 return (
                                     <div
                                         key={msg.messageId}
                                         className={`message-item-chat ${messageClass}`}
-                                        onMouseEnter={() => setHoveredMsgId(msg.messageId)}
-                                        onMouseLeave={() => setHoveredMsgId(null)}
+                                       
+                                        onMouseLeave={() => {
+                                            hideOptionsTimeout.current = setTimeout(() => {
+                                                setHoveredMsgId(null);
+                                                setOpenOptionsMsgId(null);
+                                            }, 500); // 5 giây
+                                        }}
+                                        onMouseEnter={() => {
+                                            if (hideOptionsTimeout.current) {
+                                                clearTimeout(hideOptionsTimeout.current);
+                                                hideOptionsTimeout.current = null;
+                                            }
+                                            setHoveredMsgId(msg.messageId);
+                                        }}
+                                        // onMouseLeave={() => setHoveredMsgId(null)}
+                                        // onMouseEnter={() => setHoveredMsgId(msg.messageId)}
                                     >
                                     <div className="message-content">
                                          {/* Nếu là group và không phải tin nhắn của mình thì hiển thị tên */}
                                         {isGroupChat && !isOwnMessage && (
                                             <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', color: '#555' }}>
                                             {/* {msg.senderEmail} */}
-                                            {userMap[msg.senderEmail] || msg.senderEmail}
+                                                {userMap[msg.senderEmail] ? (
+                                                    <div style={{ display: 'flex', alignItems: 'center', marginLeft: '-16px' }}>
+                                                        <img src={userMap[msg.senderEmail].avatar} alt="Avatar" className="avt-user-group-mess" />
+                                                        {userMap[msg.senderEmail].name}
+                                                    </div>
+                                                ) : (
+                                                    msg.senderEmail // Nếu chưa có tên/ avatar, hiển thị email
+                                                )}
                                             </div>
                                         )}
                                         {msg.isRecalled ? (
@@ -1163,6 +1738,14 @@ const Home = () => {
                                             style={{ maxWidth: 200, borderRadius: 8 }}
                                             />
                                         </a>
+                                        ) : isVideo ? (
+                                            <video
+                                                src={msg.content}
+                                                controls
+                                                style={{ maxWidth: '300px', borderRadius: 8 }}
+                                            >
+                                                Trình duyệt của bạn không hỗ trợ video.
+                                            </video>
                                         ) : isFile ? (
                                         <div
                                             className="file-chat"
@@ -1183,6 +1766,7 @@ const Home = () => {
                                         ) : (
                                             msg.content
                                         )}
+
                                         {hoveredMsgId === msg.messageId && (
                                             <div className="reaction-box" style={{ display: 'flex', gap: '4px', marginTop: 4 }}>
                                                 {reactionsList.map((icon) => (
@@ -1197,34 +1781,69 @@ const Home = () => {
                                             </div>
                                         )}
                                         {msg.reactions && msg.reactions.length > 0 && (
-                                        <div style={{ fontSize: '14px', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                            {msg.reactions.map((r, idx) => (
-                                                <span key={idx} style={{ background: '#eee', padding: '2px 6px', borderRadius: '12px' }}>
-                                                    {r.reaction} {r.senderEmail === user.email ? '(Bạn)' : ''}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    )}
-                                        {hoveredMsgId === msg.messageId && isOwnMessagekhac && (
+                                            <div style={{ fontSize: '14px', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                {msg.reactions.map((r, idx) => (
+                                                    <span key={idx} style={{ background: '#eee', padding: '2px 6px', borderRadius: '12px' }}>
+                                                        {r.reaction} {r.senderEmail === user.email ? '(Bạn)' : ''}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {hoveredMsgId === msg.messageId && (
                                             <div
                                                 className="message-options"
+                                                ref={moreButtonRef}
                                                 style={{
                                                     position: 'absolute',
-                                                    left: 0,
+                                                    [isOwnMessage ? 'left' : 'right']: -30,
                                                     top: 0,
                                                     cursor: 'pointer'
                                                 }}
                                                 onClick={() => {
                                                     setSelectedMsg(msg);
-                                                    setShowModal(true);
+                                                    //setShowModal(true);
+                                                    //setShowOptions((prev) => !prev);
+                                                
+                                                    setOpenOptionsMsgId(prev => (prev === msg.messageId ? null : msg.messageId));
                                                     // console.log("Clicked more options");
                                                 }}
                                             >
                                                 <MoreOutlined />
                                             </div>
+                                        )}
 
-                                            
-                                            )}
+                                        {openOptionsMsgId === msg.messageId && (
+                                            <div
+                                            ref={optionsRef}
+                                            className="message-options-menu"
+                                            style={{
+                                                position: 'absolute',
+                                                top: '35px',
+                                                [isOwnMessage ? 'left' : 'right']: -130,
+                                                backgroundColor: '#fff',
+                                                border: '1px solid #ccc',
+                                                borderRadius: '4px',
+                                                zIndex: 1000,
+                                            }}
+                                            >
+                                                <div
+                                                    className="message-option"
+                                                    style={{ padding: '8px', cursor: 'pointer' }}
+                                                    onClick={() => handleDeleteMessage(msg.messageId)}
+                                                >
+                                                    Xóa chỉ ở phía tôi
+                                                </div>
+                                                 {selectedMsg && canRecallMessage(selectedMsg.createdAt) && isOwnMessage && !msg.isRecalled && (
+                                                    <div
+                                                        className="message-option"
+                                                        style={{ padding: '8px', cursor: 'pointer', color: 'red' }}
+                                                        onClick={() => handleRecallMessage(selectedMsg?.messageId, groupId, selectedUser.type === 'group')}
+                                                    >
+                                                        Thu hồi tin nhắn
+                                                    </div>
+                                                 )}
+                                            </div>
+                                        )}
 
                                             <Modal
                                                 open={showModal}
@@ -1258,19 +1877,64 @@ const Home = () => {
                                                     </Button>
                                                 )}
                                             </Modal>
+
+                                            
                                     </div>
+                                    {isOwnMessage && (
+                                        <div style={{ fontSize: '11px', color: msg.status === 'read' ? '#151515' : '#a6a6a6' }}>
+                                            {msg.status === 'read' ? 'Đã xem' : 'Đã gửi'}
+                                        </div>
+                                    )}
                                         <div className="message-time">{timeAgo(msg.createdAt)}</div>
                                     </div>
                                     
                                 );
                                 
                             })}
+                            {showScrollToBottom && (
+                                <div
+                                    className="scroll-to-bottom"
+                                    onClick={scrollToBottomAll}
+                                >
+                                    <DownOutlined className="icon-scroll"/>
+                                </div>
+                            )}
                             <div ref={bottomRef} />
+                            {isTyping && selectedUser?.email === typingUser && (
+                                <div className="typing-indicator">
+                                    <div className="message-content" style={{ fontStyle: 'italic', color: '#888' }}>
+                                        Đang soạn tin nhắn...
+                                    </div>
+                                </div>
+                            )}
+                            
                         </div>
                         
                         <div className="footer-chat">
                             <div className="menu-section-chat">
-                                <FontAwesomeIcon icon={faLaughBeam} />
+                                <FontAwesomeIcon 
+                                    icon={faLaughBeam} 
+                                    
+                                    onClick={() => setShowEmojiPicker(prev => !prev)}
+                                    style={{ cursor: 'pointer' }}
+                                />
+                                {showEmojiPicker && (
+                                    <div
+                                        ref={emojiPickerRef}
+                                        onMouseEnter={() => setIsHoveringEmojiPicker(true)}
+                                        onMouseLeave={() => setIsHoveringEmojiPicker(false)}
+                                        style={{
+                                            position: 'absolute',
+                                            bottom: '126px', // hiển thị phía trên icon
+                                            left: '475px',
+                                            zIndex: 1000
+                                        }}
+                                    >
+                                        <EmojiPicker
+                                            onEmojiClick={(emojiData) => handleEmojiSelect(emojiData.emoji)}
+                                        />
+                                    </div>
+                                )}
                                 {/* thêm ảnh */}
                                 <input
                                     type="file"
@@ -1314,7 +1978,7 @@ const Home = () => {
                                     }}
                                 ></textarea>
                                 <div className="menu-button">
-                                    <FontAwesomeIcon icon={faLaughBeam} />
+                                    {/* <FontAwesomeIcon icon={faLaughBeam} /> */}
                                     <SendOutlined className="icon-menufold" onClick={sendMessage}/>
                                 </div>
                             </div>
@@ -1338,24 +2002,14 @@ const Home = () => {
                                         alt={selectedUser.type === "friend" ? selectedUser.fullName : selectedUser.name}
                                     />
                                     {/* Icon edit avatar */}
-                                    {selectedUser.type === "group" && (
+                                    {selectedUser.type === "group" && (selectedUser.admins?.includes(currentUserId) || selectedUser.deputies?.includes(currentUserId)) && (
                                         <>
-                                        <EditOutlined 
+                                        <CameraFilled 
                                             className="icon-edit-avatar"
                                             onClick={() => {
                                             if (selectedUser.type === "group") {
                                                 document.getElementById('avatar-upload')?.click();
                                             }
-                                            }}
-                                            style={{
-                                                position: 'absolute',
-                                                top: '10x',
-                                                right: '115px',
-                                                background: 'white',
-                                                borderRadius: '50%',
-                                                padding: 4, 
-                                                fontSize: 12,
-                                                cursor: 'pointer'
                                             }}
                                         />
                                         <input 
@@ -1369,38 +2023,35 @@ const Home = () => {
                                     )}
                                 </div>
                                 <div className="name-user">
-                                    {/* <p className="name-user">{selectedUser.type === "friend" ? selectedUser.fullName : selectedUser.name}</p>
-                                    <EditOutlined className="icon-edit"/> */}
-                                    {isEditingName ? (
-                                        <input
-                                        value={editedName}
-                                        onBlur={saveEditedName}
-                                        onChange={(e) => setEditedName(e.target.value)}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            saveEditedName();
-                                          }
-                                        }}
-                                        autoFocus
-                                        className="input-edit-name"
-                                        />
-                                    ) : (
                                         <p className="name-user">{selectedUser.type === "friend" ? selectedUser.fullName : selectedUser.name}</p>
-                                    )}
                                     {/* Icon edit name */}
-                                    <EditOutlined 
-                                        className="icon-edit"
-                                        onClick={() => {
-                                        if (selectedUser.type === "group") {
-                                            setIsEditingName(true);
-                                            setEditedName(selectedUser.name);
-                                        }
-                                        }}
-                                        style={{ marginLeft: 8, cursor: 'pointer' }}
-                                    />
+                                    {selectedUser.type === "group" && (selectedUser.admins?.includes(currentUserId) || selectedUser.deputies?.includes(currentUserId)) && (
+                                        <EditOutlined
+                                            className="icon-edit"
+                                            onClick={() => {
+                                                setIsEditNameModalOpen(true);   
+                                                setEditedName(selectedUser.name);
+                                            }}
+                                            style={{ marginLeft: 8, cursor: 'pointer' }}
+                                        />
+                                    )}
                                 </div>
                                 
+                                <Modal
+                                    open={isEditNameModalOpen}
+                                    onCancel={() => setIsEditNameModalOpen(false)}
+                                    onOk={saveEditedName}
+                                    title="Chỉnh sửa tên nhóm"
+                                    okText="Xác nhận"
+                                    cancelText="Hủy"
+                                >
+                                    <Input
+                                        value={editedName}
+                                        onChange={(e) => setEditedName(e.target.value)}
+                                        onPressEnter={saveEditedName}
+                                    />
+                                </Modal>
+
                                 {selectedUser.type === "friend" && (
                                     <div className="btn-user-type">
                                         <div className="btn-unnotify">
@@ -1519,7 +2170,9 @@ const Home = () => {
                             <p>Thêm thành viên</p>
                         </div>
                         <div className="list-member">
-                            {members.map(member => (
+                            {[...members]
+                                .sort((a, b) => (b.role === 'admin' ? 1 : 0) - (a.role === 'admin' ? 1 : 0))
+                                .map(member => (
                                 <div 
                                     key={member.userId} 
                                     className="item-mem" 
@@ -1529,13 +2182,27 @@ const Home = () => {
                                 >
                                     <div className="avatar-mem">
                                         <img src={member.avatar} alt="" />
+                                        {member.role === 'admin' && (
+                                            <FontAwesomeIcon icon={faKey} />
+                                        )}
+                                        
                                     </div>
                                     <div className="name-mem">
                                         <p>{member.fullName}</p>
-                                        <span>{member.role}</span>
+                                        <span>
+                                            {member.role === 'admin' ? 'Trưởng nhóm' :
+                                            member.role === 'deputy' ? 'Phó trưởng nhóm' :
+                                            'Thành viên'}
+                                        </span>
                                         
                                     </div>
                                     {openMenuUserId === member.userId && (
+                                        // Nếu mình là admin hoặc phó nhóm => thấy menu của mọi người
+                                        selectedUser.admins?.includes(currentUserId) ||
+                                        selectedUser.deputies?.includes(currentUserId) ||
+                                        // Nếu mình là member thường => chỉ thấy menu của chính mình
+                                        member.userId === currentUserId
+                                    ) && (
                                         <div className="menu-trigger" onClick={(e) => {
                                             e.stopPropagation(); // Ngăn click từ trigger bị đẩy ra ngoài
                                             setSelectedUserModal(member.userId);
@@ -1545,13 +2212,19 @@ const Home = () => {
                                     )}
                                     
                                     {selectedUserModal === member.userId && (
-                                        
                                         <div className="menu-options" ref={menuRef}>
                                             {/* Nếu không phải là admin thì hiển thị nút "Làm admin" */}
-                                            {member.userId !== currentUserId && member.role !== 'admin' && (
-                                                <div className="menu-item" onClick={() => addAdminToGroup(groupId, member.userId)}>Làm admin</div>
+                                            {member.userId !== currentUserId && member.role !== 'admin' && member.role != 'deputy' && (
+                                                <>
+                                                    <div className="menu-item" onClick={() => addAdminToGroup(groupId, member.userId)}>Làm admin</div>
+                                                    <div className="menu-item" onClick={() => addDeputyToGroup(groupId, member.userId)}>Làm phó nhóm</div>
+                                                </>
                                             )}
-
+                                            {member.role == 'deputy' && (
+                                                <>
+                                                    <div className="menu-item" onClick={() => handleRemoveDeputy(groupId, member.userId)}>Xóa phó nhóm</div>
+                                                </>
+                                            )}
                                             {/* Nếu là admin thì hiển thị nút "Xóa quyền admin" */}
                                             {member.userId !== currentUserId && member.role == 'admin' && (
                                                 <div className="menu-item" onClick={() => handleRemoveAdmin(groupId, member.userId)}>Xóa quyền admin</div>
@@ -1559,12 +2232,12 @@ const Home = () => {
 
                                             {/* Nút "Xóa thành viên" luôn hiển thị */}
                                             {member.userId !== currentUserId && (
-                                                <div className="menu-item" onClick={() => handleRemoveMember(groupId, member.userId)}>
-                                                    Xóa thành viên
-                                                </div>
+                                                <>
+                                                    <div className="menu-item" onClick={() => handleRemoveMember(groupId, member.userId)}>Xóa thành viên</div>
+                                                </>
                                             )}
                                             {member.userId == currentUserId && (
-                                                <div className="menu-item">
+                                                <div className="menu-item" onClick={() => handleLeaveGroup(groupId)}>
                                                     Rời nhóm
                                                 </div>
                                             )}
@@ -1655,6 +2328,52 @@ const Home = () => {
                         </div>
                     </div>
                 </Modal>
+
+                {/* modal hiển thị thông tin người dùng */}
+                {selectedUser && (
+                    <Modal 
+                        open={isModalOpenUser} 
+                        onClose={handleCloseModal} 
+                        className="user-modal"
+                        footer={null} 
+                        closable={false} 
+                    >
+                        <div className="modal-content">
+                            <div className="title-modal">
+                                <p>Thông tin tài khoản</p>
+                                <CloseOutlined className="icon-close-modal-user" onClick={handleCloseModal}/>
+                            </div>
+                            <div className="cover-img">
+                                <img src={selectedUser.avatar} alt="Cover Image" className="cover-img" />
+                            </div>
+                            <div className="info-modal">
+                                <div className="name-info">
+                                    <img src={selectedUser.avatar} alt='Avatar' className='avt-img'/>
+                                    <div className="name-setting">
+                                        <p>{selectedUser.fullName}</p>
+                                        <FontAwesomeIcon icon={faPencil} />
+                                    </div>
+                                </div>
+                                <div className="btn-info">
+                                    <button className="btn-addfriend">Hủy kết bạn</button>
+                                    <button className="btn-chat">Nhắn tin</button>
+                                </div>
+                            </div>
+                            <div className="info-detail">
+                                <p className='info-detail-title'>Thông tin cá nhân</p>
+                                <div className="info-detail-item">
+                                    <p>Email</p>
+                                    <span>{selectedUser.email}</span>
+                                </div>
+                                <div className="info-detail-item">
+                                    <p>Số điện thoại</p>
+                                    <span>{selectedUser.phoneNumber}</span>
+                                </div>
+                            </div>
+                            <div className="btn-modal-other"></div>
+                        </div>
+                    </Modal>
+                )}
             </div>
         </div>
     );

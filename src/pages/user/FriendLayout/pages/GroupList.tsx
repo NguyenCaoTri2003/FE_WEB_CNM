@@ -123,7 +123,14 @@ const GroupList = () => {
         fetchGroups();
     }, []);
     
-    if (loading) return <div>Loading...</div>;
+    if (loading) {
+      return (
+        <div className='spinnerContainer'>
+          <div className='spinner'></div>
+          <p>Vui lòng đợi trong giây lát...</p>
+        </div>
+      );
+    }
 
     return (
         <div className="contact-page">
