@@ -52,6 +52,8 @@ export const API_ENDPOINTS = {
     sendMessageGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/messages`,
     getMessagesGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/messages`,
     addAdmin: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/admins`,
+    addAdminWeb: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/adminsweb`,
+
     addDeputy: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/deputies`,
     removeDeputy: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/deputiesweb`,
     removeAdmin: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/adminsweb`,
@@ -59,4 +61,7 @@ export const API_ENDPOINTS = {
     recallGroupMessage: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/recall`,
     deleteGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}`,
     leaveGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/leaveweb`,
+    toggleMemberInvite: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/toggle-member-invite`,
+    forwardMessageGroup: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/forward`,
+
 }; 

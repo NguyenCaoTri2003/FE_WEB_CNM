@@ -10,10 +10,11 @@ import { useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import axios from 'axios';
 import { API_ENDPOINTS } from "config/api";
-import { Button, Input, Modal } from "antd";
+import { Button, Input, Modal, notification, Select } from "antd";
 import 'antd/dist/reset.css';
 import { useMessageContext } from "../../context/MessagesContext";
 import { useUnreadMessages } from '../../context/UnreadMessagesContext'; 
+import { useGroupContext } from "../../context/GroupContext";
 import socket from "../../routes/socket";
 import EmojiPicker from 'emoji-picker-react';
 
@@ -101,6 +102,7 @@ interface BaseMessage {
     reactions?: Reaction[];
     isSystem?: boolean;
     action?: string; 
+    groupId?: string;
 }
 
 export interface Message extends BaseMessage {
@@ -182,13 +184,11 @@ type UploadAvatarResponse = {
 const Home = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    // const friend = location.state;
     const { friend, groupId } = location.state || {};
-    // console.log(friend, groupId);
+    const { groups, fetchGroups, setGroups } = useGroupContext();
     
     const [hoveredMessageId, setHoveredMessageId] = useState<number | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [selectedUser, setSelectedUser] = useState<Message | null>(null);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -198,14 +198,8 @@ const Home = () => {
 
     const [selectedUser, setSelectedUser] = useState(friend);
     const [selectedUserModal, setSelectedUserModal] = useState('');
-    const [selectedGroup, setSelectedGroup] = useState<GroupType | null>(null);
-    // const [selectedUser, setSelectedUser] = useState<FriendType | GroupTypes | null>(null);
-
-    // const [selectedUser, setSelectedUser] = useState(selectedUserOrGroup);
 
     const [message, setMessage] = useState('');
-    // const [chatMessages, setChatMessages] = useState<Message[]>([]);
-    // const [chatMessages, setChatMessages] = useState<BaseMessage[]>([]);
     const [chatMessages, setChatMessages] = useState<(Message | MessageGroup)[]>([]);
 
 
@@ -217,7 +211,6 @@ const Home = () => {
 
     //xóa tin nhắn
     const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
-    // const [selectedMsg, setSelectedMsg] = useState<Message | null>(null);
     const [selectedMsg, setSelectedMsg] = useState<BaseMessage | null>(null);
 
     const [showModal, setShowModal] = useState(false);
@@ -235,7 +228,6 @@ const Home = () => {
     const [friends, setFriends] = useState<Friend[]>([]); 
     const [groupMembers, setGroupMembers] = useState<string[]>([]); 
     const [selectedFriends, setSelectedFriends] = useState<string[]>([]); 
-    // console.log('location.state:', location.state);
 
     //tim kiếm bạn bè
     const [searchFriendTerm, setSearchFriendTerm] = useState('');  // ô nhập
@@ -258,7 +250,6 @@ const Home = () => {
 
     const [showOptions, setShowOptions] = useState(false);
     const [openOptionsMsgId, setOpenOptionsMsgId] = useState<string | null>(null);
-    //const optionsRef = useRef<HTMLDivElement>(null);
     const [selectedMessageId, setSelectedMessageId] = useState(null);
 
     const optionsRef = useRef<HTMLDivElement>(null); // div chứa menu
@@ -275,11 +266,10 @@ const Home = () => {
 
     const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 
+    const [allowMemberInvite, setAllowMemberInvite] = useState(false);
 
-
-
-
-    
+    const [showForwardModal, setShowForwardModal] = useState(false);
+    const [forwardTarget, setForwardTarget] = useState('');
 
     const reactionsList = ['👍', '❤️', '😂', '😮', '😢', '👎'];
 
@@ -312,41 +302,121 @@ const Home = () => {
     };
 
 
+    // const handleReactMessage = async (messageId: string, reaction: string) => {
+    //     try {
+    //         const isGroup = selectedUser.type === 'group';
+    //         const url = isGroup
+    //             ? `${API_ENDPOINTS.reactionGroup(groupId, messageId)}`
+    //             : `${API_ENDPOINTS.reaction}`;
+    
+    //         const payload = isGroup
+    //             ? { reaction }
+    //             : { messageId, reaction };
+    
+    //         await axios.post(url, payload, {
+    //             headers: {
+    //                 Authorization: `Bearer ${localStorage.getItem("token")}`
+    //             }
+    //         });
+    
+    //         // Gọi lại dữ liệu tin nhắn nếu cần thiết, hoặc update local
+    //         // fetchMessages(); // nếu có
+    //     } catch (error) {
+    //         console.error('Lỗi khi gửi reaction:', error);
+    //     }
+    // };
+
+    // useEffect(() => {
+    //     if (showEmojiPicker) {
+    //         const timeout = setTimeout(() => {
+    //             if (!isHoveringEmojiPicker) {
+    //                 setShowEmojiPicker(false);
+    //             }
+    //         }, 5000); // sau 5 giây nếu không hover thì đóng
+
+    //         return () => clearTimeout(timeout);
+    //     }
+    // }, [showEmojiPicker, isHoveringEmojiPicker]);
+
     const handleReactMessage = async (messageId: string, reaction: string) => {
         try {
             const isGroup = selectedUser.type === 'group';
             const url = isGroup
                 ? `${API_ENDPOINTS.reactionGroup(groupId, messageId)}`
                 : `${API_ENDPOINTS.reaction}`;
-    
+
             const payload = isGroup
                 ? { reaction }
                 : { messageId, reaction };
-    
+
             await axios.post(url, payload, {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem("token")}`
                 }
             });
-    
-            // Gọi lại dữ liệu tin nhắn nếu cần thiết, hoặc update local
-            // fetchMessages(); // nếu có
+
+            // 🔔 Gửi cho người khác qua socket
+            socket.emit("messageReaction", {
+                messageId,
+                reaction,
+                receiverEmail: isGroup ? null : selectedUser.email,
+            });
+
+            // ✅ Cập nhật UI local cho chính mình
+            handleMessageReaction({
+                messageId,
+                reaction,
+                senderEmail: currentUserEmail, // 👈 chính bạn
+            });
+
         } catch (error) {
             console.error('Lỗi khi gửi reaction:', error);
         }
     };
 
-    useEffect(() => {
-        if (showEmojiPicker) {
-            const timeout = setTimeout(() => {
-                if (!isHoveringEmojiPicker) {
-                    setShowEmojiPicker(false);
-                }
-            }, 5000); // sau 5 giây nếu không hover thì đóng
+    const handleMessageReaction = ({ messageId, reaction, senderEmail }: {
+        messageId: string;
+        reaction: string;
+        senderEmail: string;
+    }) => {
+        setChatMessages((prevMessages) =>
+            prevMessages.map((msg) => {
+                if (msg.messageId !== messageId) return msg;
 
-            return () => clearTimeout(timeout);
-        }
-    }, [showEmojiPicker, isHoveringEmojiPicker]);
+                const reactions = msg.reactions || [];
+                const existing = reactions.find(r => r.senderEmail === senderEmail);
+                let newReactions;
+
+                if (existing && existing.reaction === reaction) {
+                    newReactions = reactions.filter(r => r.senderEmail !== senderEmail);
+                } else if (existing) {
+                    newReactions = reactions.map(r =>
+                        r.senderEmail === senderEmail ? { ...r, reaction, timestamp: new Date().toISOString() } : r
+                    );
+                } else {
+                    newReactions = [...reactions, {
+                        senderEmail,
+                        reaction,
+                        timestamp: new Date().toISOString()
+                    }];
+                }
+
+                return { ...msg, reactions: newReactions };
+            })
+        );
+    };
+
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on("messageReaction", handleMessageReaction);
+
+        return () => {
+            socket.off("messageReaction", handleMessageReaction);
+        };
+    }, [socket]);
+
+
 
     const handleEmojiSelect = (emoji: string) => {
         setMessage((prev) => prev + emoji);
@@ -692,6 +762,13 @@ const Home = () => {
     };
 
     useEffect(() => {
+        if (socket && selectedUser?.type === 'group' && selectedUser.groupId) {
+            socket.emit("joinGroup", { groupId: selectedUser.groupId});
+            console.log("📡 Đã join vào nhóm:", selectedUser.groupId);
+        }
+    }, [socket, selectedUser]);
+
+    useEffect(() => {
         if (!socket) return;
 
         socket.on("newMessage", (message: any) => {
@@ -707,17 +784,22 @@ const Home = () => {
             if (from !== currentUserEmail) {
                 addUnreadMessage(from); // chính xác hơn
             }
+             if (selectedUser?.type === "friend" && selectedUser.email === senderEmail) {
+                setChatMessages(prev => [...prev, message]);
+            }
         });
 
         socket.on("newGroupMessage", (data: any) => {
             const { groupId, message } = data;
-
+            console.log("👤 currentUserEmail trong useEffect:", currentUserEmail);
             // Nếu chính mình gửi thì bỏ qua vì đã xử lý ở sendMessage
             if (message.senderEmail === currentUserEmail) return;
 
             updateLastMessage(groupId, message.content, new Date(message.createdAt), message.senderEmail);
-            if (selectedUser?.groupId !== groupId) {
-                addUnreadMessage(groupId); // Thêm vào context khi tin nhắn nhóm mới đến
+            if (selectedUser?.type === "group" && selectedUser.groupId === groupId) {
+                setChatMessages(prev => [...prev, message]); // 👈 cập nhật tin nhắn
+            } else {
+                addUnreadMessage(groupId); // Nếu đang ở phòng khác
             }
             console.log("📩 Nhận tin nhắn nhóm từ:", message.senderEmail);
             console.log("📩 Nội dung:", message.content);
@@ -774,45 +856,9 @@ const Home = () => {
         };
     
         fetchMessages();
-        const interval = setInterval(fetchMessages, 3000);
-        return () => clearInterval(interval);
     }, [selectedUser]);
     
     
-    // Tải tin nhắn
-    // useEffect(() => {
-    //     const token = localStorage.getItem('token');
-    //     // const myEmail = localStorage.getItem('email');
-    //     const user = JSON.parse(localStorage.getItem("user") || "{}");
-    //     const myEmail = user.email;
-    //     const fetchMessages = async () => {
-    //         try {
-    //             const response = await axios.get<GetMessagesResponse>(
-    //                 `${API_ENDPOINTS.getMessages}${selectedUser.email}`,
-    //                 {
-    //                     headers: {
-    //                         Authorization: `Bearer ${token}`,
-    //                     },
-    //                 }
-    //             );
-    //             setChatMessages(response.data.data); 
-    //             const messages = response.data.data;
-    //             if (messages.length > 0) {
-    //                 const lastMsg = messages[messages.length - 1];
-    //                 const isReceiver = lastMsg.senderEmail !== myEmail;
-    //                 const friendEmail = isReceiver ? lastMsg.senderEmail : lastMsg.receiverEmail;
-            
-    //                 updateLastMessage(friendEmail, lastMsg.content, new Date(lastMsg.createdAt));
-    //             }
-    //         } catch (error) {
-    //             console.error("Lỗi khi tải tin nhắn:", error);
-    //         }
-    //     };
-    
-    //     fetchMessages();
-    //     const interval = setInterval(fetchMessages, 3000); // Mỗi 3s tải lại
-    //     return () => clearInterval(interval);
-    // }, [selectedUser]);
 
     function timeAgo(createdAt: string | Date): string {
         const now = new Date();
@@ -840,14 +886,70 @@ const Home = () => {
         }
     }
 
+    // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    //     const token = localStorage.getItem('token');
+    //     const file = e.target.files?.[0];
+    //     if (!file) return;
+    
+    //     const formData = new FormData();
+    //     formData.append('file', file);
+    
+    //     try {
+    //         const response = await fetch(API_ENDPOINTS.uploadFile, {
+    //             method: 'POST',
+    //             headers: {
+    //                 Authorization: `Bearer ${token}`,
+    //             },
+    //             body: formData
+    //         });
+    
+    //         const result = await response.json();
+    
+    //         if (result.success) {
+    //             console.log('Tải lên thành công:', result.data);
+    
+                
+
+    //             if (selectedUser.type === 'group') {
+    //                 // CHAT NHÓM
+    //                 const response = await axios.post<SendGroupMessageResponse>(
+    //                     `${API_ENDPOINTS.sendMessageGroup(selectedUser.groupId)}`,
+    //                     {
+    //                         content: result.data.url,
+    //                         type: 'file',
+    //                     },
+    //                     {
+    //                         headers: { Authorization: `Bearer ${token}` }
+    //                     }
+    //                 );
+    //             } else if (selectedUser.type === 'friend') {
+    //                 // Gửi tin nhắn chứa đường dẫn file
+    //                 await axios.post(API_ENDPOINTS.sendMessage, {
+    //                     receiverEmail: selectedUser.email,
+    //                     content: result.data.url,
+    //                     type: "file"
+    //                 }, {
+    //                     headers: { Authorization: `Bearer ${token}` }
+    //                 });
+    //             }
+
+    
+    //         } else {
+    //             console.error('Lỗi upload:', result.message);
+    //         }
+    //     } catch (error) {
+    //         console.error('Upload failed:', error);
+    //     }
+    // };
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const token = localStorage.getItem('token');
         const file = e.target.files?.[0];
-        if (!file) return;
-    
+        if (!file || !selectedUser) return;
+
         const formData = new FormData();
         formData.append('file', file);
-    
+
         try {
             const response = await fetch(API_ENDPOINTS.uploadFile, {
                 method: 'POST',
@@ -856,38 +958,71 @@ const Home = () => {
                 },
                 body: formData
             });
-    
+
             const result = await response.json();
-    
+
             if (result.success) {
-                console.log('Tải lên thành công:', result.data);
-    
-                
+                const fileUrl = result.data.url;
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                const myEmail = user.email;
 
                 if (selectedUser.type === 'group') {
-                    // CHAT NHÓM
-                    const response = await axios.post<SendGroupMessageResponse>(
+                    const res = await axios.post<SendGroupMessageResponse>(
                         `${API_ENDPOINTS.sendMessageGroup(selectedUser.groupId)}`,
                         {
-                            content: result.data.url,
+                            content: fileUrl,
                             type: 'file',
                         },
                         {
                             headers: { Authorization: `Bearer ${token}` }
                         }
                     );
-                } else if (selectedUser.type === 'friend') {
-                    // Gửi tin nhắn chứa đường dẫn file
-                    await axios.post(API_ENDPOINTS.sendMessage, {
-                        receiverEmail: selectedUser.email,
-                        content: result.data.url,
-                        type: "file"
-                    }, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                }
 
-    
+                    if (res.data.success) {
+                        const sentMsg = res.data.data;
+                        socket.emit("groupMessage", {
+                            groupId: selectedUser.groupId,
+                            message: {
+                                messageId: sentMsg.messageId,
+                                content: sentMsg.content,
+                                createdAt: sentMsg.createdAt,
+                                senderEmail: sentMsg.senderEmail,
+                            }
+                        });
+                        updateLastMessage(selectedUser.groupId, sentMsg.content, new Date(sentMsg.createdAt), myEmail);
+                        setChatMessages(prev => [...prev, sentMsg]);
+                        scrollToBottom();
+                    }
+
+                } else if (selectedUser.type === 'friend') {
+                    const res = await axios.post<SendMessageResponse>(
+                        API_ENDPOINTS.sendMessage,
+                        {
+                            receiverEmail: selectedUser.email,
+                            content: fileUrl,
+                            type: "file"
+                        },
+                        {
+                            headers: { Authorization: `Bearer ${token}` }
+                        }
+                    );
+
+                    if (res.data.success) {
+                        const sentMsg = res.data.data;
+                        socket.emit("newMessage", {
+                            receiverEmail: selectedUser.email,
+                            message: {
+                                messageId: sentMsg.messageId,
+                                content: sentMsg.content,
+                                createdAt: sentMsg.createdAt,
+                                senderEmail: sentMsg.senderEmail,
+                            }
+                        });
+                        updateLastMessage(selectedUser.email, sentMsg.content, new Date(sentMsg.createdAt), myEmail);
+                        setChatMessages(prev => [...prev, sentMsg]);
+                        scrollToBottom();
+                    }
+                }
             } else {
                 console.error('Lỗi upload:', result.message);
             }
@@ -895,8 +1030,6 @@ const Home = () => {
             console.error('Upload failed:', error);
         }
     };
-
-    
     
     const getFileIcon = (filename: string) => {
         const extension = filename.split('.').pop()?.toLowerCase();
@@ -1091,11 +1224,16 @@ const Home = () => {
         setIsSidebarOpen(false);
         setShowList(false);
         
-        alert("Thêm thành viên thành công!");
+        //alert("Thêm thành viên thành công!");
+        notification.success({
+            message: 'Thêm thành viên thành công!',
+        });
       
         } catch (error) {
           console.error("Lỗi khi thêm thành viên:", error);
-          alert("Có lỗi xảy ra khi thêm thành viên!");
+          notification.error({
+            message: 'Có lỗi xảy ra khi thêm thành viên!',
+        });
         } finally {
           setLoading(false);
         }
@@ -1150,10 +1288,14 @@ const Home = () => {
                 setGroupMembers(prev => prev.filter(member => member !== memberId)); 
                 fetchGroupMembers(); 
                 setSelectedUserModal('');
-                alert("Xóa thành viên thành công!");
+                notification.success({
+                    message: 'Xóa thành viên khỏi nhóm thành công!',
+                });
                 setIsSidebarOpen(false);
             } else {
-                alert('Xóa thành viên thất bại');
+                notification.error({
+                    message: 'Xóa thành viên thất bại!',
+                });
             }
         } catch (error: any) {
             console.error("Lỗi khi xóa thành viên:", error.response?.data?.message || error.message);
@@ -1173,7 +1315,7 @@ const Home = () => {
             }
     
             const response = await axios.post<ApiResponseAdmin>(
-                `${API_ENDPOINTS.addAdmin(groupId)}`, 
+                `${API_ENDPOINTS.addAdminWeb(groupId)}`, 
                 { memberId: adminId },
                 {
                     headers: {
@@ -1184,11 +1326,15 @@ const Home = () => {
             );
     
             if (response.data.success) {
-                alert('Đã thêm thành viên thành admin!');
+                notification.success({
+                    message: 'Đã thêm thành viên thành admin!',
+                });
                 fetchGroupMembers(); 
                 // Optionally: Reload group info if you want
             } else {
-                alert('Thêm admin thất bại!');
+                notification.error({
+                    message: 'Thêm admin thất bại!',
+                });
             }
         } catch (error: any) {
             console.error("Lỗi khi thêm admin:", error.response?.data?.message || error.message);
@@ -1197,6 +1343,9 @@ const Home = () => {
             setLoading(false);
         }
     };
+
+
+
 
     const handleRemoveAdmin = async (groupId?: string, adminId?: string) => {
         setLoading(true);
@@ -1224,7 +1373,9 @@ const Home = () => {
             );
     
             if (response.data.success) {
-                alert('Đã xóa quyền admin của thành viên thành công!');
+                notification.success({
+                    message: 'Đã xóa quyền admin của thành viên thành công!',
+                });
                 // Optional: Cập nhật lại danh sách admin
                 fetchGroupMembers(); 
             } else {
@@ -1260,7 +1411,9 @@ const Home = () => {
             );
 
             if (response.data.success) {
-                alert('Đã thêm thành viên thành phó trưởng nhóm!');
+                notification.success({
+                    message: 'Đã thêm thành viên thành phó trưởng nhóm!',
+                });
                 fetchGroupMembers(); 
             } else {
                 alert('Thêm phó trưởng nhóm thất bại!');
@@ -1300,7 +1453,9 @@ const Home = () => {
             );
 
             if (response.data.success) {
-                alert('Đã xóa phó trưởng nhóm thành công!');
+                notification.success({
+                    message: 'Đã xóa phó trưởng nhóm thành công!',
+                });
                 // Optional: Cập nhật lại danh sách thành viên nhóm
                 fetchGroupMembers(); 
             } else {
@@ -1334,7 +1489,15 @@ const Home = () => {
             },
             
           });
-          console.log('Avatar updated', res.data);
+            console.log('Avatar updated', res.data);
+            fetchGroups(); // Cập nhật lại danh sách nhóm
+            setIsModalOpenGroup(false);
+            setIsSidebarOpen(false);
+            setShowList(false);
+          notification.success({
+            message: 'Cập nhật ảnh đại diện thành công!',
+        });
+
           // reload group info nếu cần
         } catch (error) {
           console.error('Failed to update avatar', error);
@@ -1355,7 +1518,13 @@ const Home = () => {
         console.log('Name updated', res.data);
         setSelectedUser((prev: any) => ({ ...prev, name: editedName }));
         setIsEditNameModalOpen(false)
-        window.location.reload();
+        fetchGroups(); // Cập nhật lại danh sách nhóm
+        setIsModalOpenGroup(false);
+        setIsSidebarOpen(false);
+        setShowList(false);
+        notification.success({
+            message: 'Cập nhật tên nhóm thành công!',
+        });
         // reload group info nếu cần
         } catch (error) {
         console.error('Failed to update name', error);
@@ -1404,10 +1573,12 @@ const Home = () => {
           });
       
           if (res.data.success) {
-            alert('Nhóm đã được xóa!');
-            // Chuyển hướng hoặc cập nhật lại danh sách nhóm ở đây
-            window.location.reload();
+            fetchGroups(); // Cập nhật lại danh sách nhóm
             // Có thể chuyển hướng hoặc cập nhật lại danh sách nhóm
+            notification.success({
+                message: 'Xóa nhóm thành công!',
+            });
+
           }
         } catch (error) {
           console.error('Lỗi xóa nhóm:', error);
@@ -1434,7 +1605,11 @@ const Home = () => {
                 alert('Bạn đã rời khỏi nhóm thành công!');
                 console.log("📤 Emit leaveGroupWeb", { groupId, userEmail: currentUserEmail });
                 socket.emit('leaveGroupWeb', { groupId, userEmail: currentUserEmail });
-               
+                
+                fetchGroups(); // Cập nhật lại danh sách nhóm
+                notification.success({
+                    message: 'Rời khỏi nhóm thành công!',
+                });
             // Cập nhật lại danh sách nhóm hoặc chuyển hướng người dùng
             // Ví dụ: fetchUserGroups();
             } else {
@@ -1480,59 +1655,70 @@ const Home = () => {
         });
     }, [chatMessages]);
 
-    // useEffect(() => {
-    //     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    //     // 1. Lắng nghe sự kiện trước
-    //     socket.on('friendStatusUpdate', (data: { email: string; online: boolean }) => {
-    //         const { email, online } = data;
-    //         console.log('📥 Cập nhật trạng thái từ BE:', email, online);
-    //         setFriendStatuses(prev => ({
-    //             ...prev,
-    //             [email.toLowerCase().trim()]: online
-    //         }));
-    //     });
+    useEffect(() => {
+    if (!socket) return;
 
-    //     console.log("📡 Emit userStatus từ FE:", {
-    //         status: "online",
-    //         email: user.email
-    //     });
-    
-    //     // 2. Sau khi lắng nghe xong thì mới emit
-    //     socket.emit("userStatus", {
-    //         status: "online",
-    //         email: user.email
-    //     });
-    //     console.log("✅ friendStatuses:", friendStatuses);
-    
-    //     return () => {
-    //         socket.off('friendStatusUpdate');
-    //     };
-        
-    // }, [friendStatuses]);
-    
-    // console.log("📌 selectedUser.email:", selectedUser?.email);
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        // Khi socket reconnect (do reload)
+        socket.on('connect', () => {
+            if (user?.email) {
+                socket.emit('userStatusWeb', {
+                    email: user.email,
+                    status: 'online'
+                });
+                console.log("📡 Reconnected - Emit online:", user.email);
+            }
+        });
+
+        return () => {
+            socket.off('connect');
+        };
+    }, [socket]);
 
     useEffect(() => {
-        // Lắng nghe sự kiện friendStatusUpdate từ server
-        socket.on('friendStatusUpdate', (data: { email: string; online: boolean }) => {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (socket?.connected && user?.email) {
+            socket.emit('userStatusWeb', {
+                email: user.email,
+                status: 'online'
+            });
+            console.log("📡 Socket already connected - Emit online:", user.email);
+        }
+    }, [socket]);
+
+
+    useEffect(() => {
+        if (!socket) return;
+
+        socket.on('friendStatusUpdateWeb', (data: { email: string; online: boolean }) => {
             const { email, online } = data;
-            console.log('📥 Cập nhật trạng thái từ BE:', email, online); 
             setFriendStatuses(prev => ({
                 ...prev,
                 [email.toLowerCase().trim()]: online
             }));
         });
-        console.log("📡 Emit userStatus từ FE:",   {
-            status: "online",
-            email: user.email,
-            friendStatuses
+
+        // ✅ Nhận danh sách bạn bè online ban đầu
+        socket.on('initialFriendStatusesWeb', (data: { friends: string[]; onlineFriends: string[] }) => {
+            const { friends, onlineFriends } = data;
+            const newStatuses: Record<string, boolean> = {};
+            friends.forEach(friend => {
+                newStatuses[friend.toLowerCase().trim()] = onlineFriends.includes(friend);
+            });
+            setFriendStatuses(newStatuses);
         });
-        // Cleanup khi component bị unmount
+
         return () => {
-            socket.off('friendStatusUpdate');
+            socket.off('friendStatusUpdateWeb');
+            socket.off('initialFriendStatusesWeb');
         };
-    }, []);
+    }, [socket]);
+
+    useEffect(() => {
+        console.log("Friend statuses:", friendStatuses);  // In ra friendStatuses khi thay đổi
+    }, [friendStatuses]);
 
     useEffect(() => {
         socket.on('typingStart', (data: { senderEmail: string }) => {
@@ -1604,6 +1790,109 @@ const Home = () => {
         };
     }, [groupId]);
 
+    const toggleMemberInvite = async (groupId: string) => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.post<ApiResponse>(
+                API_ENDPOINTS.toggleMemberInvite(groupId),
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data.success) {
+                setGroupMembers(response.data.data); // cập nhật lại group
+                setAllowMemberInvite(response.data.data.allowMemberInvite);
+                notification.success({
+                    message: 'Cập nhật quyền mời thành viên thành công!',
+                });
+            }
+        } catch (err: any) {
+            const message = err?.response?.data?.message || "Lỗi khi cập nhật quyền mời thành viên";
+            notification.error({ message });
+        }
+    };
+
+    const handleForwardMessage = async (
+        messageId: string,
+        sourceGroupId: string,
+        targetGroupId?: string,
+        targetEmail?: string
+        ) => {
+        if (!messageId || !sourceGroupId) {
+            console.warn("Thiếu messageId hoặc sourceGroupId");
+            return;
+        }
+
+        if (!targetGroupId && !targetEmail) {
+            console.warn("Phải cung cấp targetGroupId hoặc targetEmail");
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.warn("Không tìm thấy token");
+            return;
+        }
+
+        try {
+            const url = API_ENDPOINTS.forwardMessageGroup(sourceGroupId, messageId);
+            
+
+            const body = {
+            ...(targetGroupId && { targetGroupId }),
+            ...(targetEmail && { targetEmail }),
+            };
+
+            const response = await axios.post<ApiResponse>(url, body, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+            });
+
+            const forwardedMsg = response.data.data;
+
+            // Cập nhật giao diện: thêm tin nhắn mới nếu muốn
+            setChatMessages((prev) => [...prev, forwardedMsg]);
+
+            if (response.data.success) {
+                setGroupMembers(response.data.data); // cập nhật lại group
+                setAllowMemberInvite(response.data.data.allowMemberInvite);
+                notification.success({
+                    message: "Chuyển tiếp tin nhắn thành công!",
+                });
+            }
+            setShowForwardModal(false);
+        } catch (error: any) {
+            console.error("Lỗi khi chuyển tiếp tin nhắn:", error.response?.data || error.message);
+            notification.error({
+                message: "Không chuyển tiếp tin nhắn được!",
+            });
+        } 
+    };
+
+    const onConfirmForward = () => {
+        if (!selectedMsg) {
+            notification.error({ message: "Chưa chọn tin nhắn để chuyển tiếp" });
+            return;
+        }
+        if (!forwardTarget) {
+            notification.error({ message: "Chưa chọn người nhận" });
+            return;
+        }
+
+        // Tách prefix group- hoặc user-
+        if (forwardTarget.startsWith("group-")) {
+            const targetGroupId = forwardTarget.replace("group-", "");
+            handleForwardMessage(selectedMsg.messageId, selectedMsg.groupId!, targetGroupId, undefined);
+        } else if (forwardTarget.startsWith("user-")) {
+            const targetEmail = forwardTarget.replace("user-", "");
+            handleForwardMessage(selectedMsg.messageId, undefined!, undefined, targetEmail);
+        }
+
+        setShowForwardModal(false);
+    };
+
+
     
 
     if (loading) {
@@ -1634,8 +1923,14 @@ const Home = () => {
                                     </span>
                                     <span className="title-status">
                                         {selectedUser.type === 'friend' && selectedUser.email && (
-                                            <span className="title-status">
-                                                {friendStatuses[selectedUser.email] ? 'Đang hoạt động' : 'Không hoạt động'}
+                                            <span
+                                                className={
+                                                    friendStatuses[selectedUser.email.toLowerCase().trim()]
+                                                        ? 'status-online'
+                                                        : 'status-offline'
+                                                }
+                                            >
+                                                {friendStatuses[selectedUser.email.toLowerCase().trim()] ? 'Đang hoạt động' : 'Không hoạt động'}
                                             </span>
                                         )}
                                     </span>
@@ -1678,14 +1973,14 @@ const Home = () => {
                                     return (
                                         <div key={msg.messageId} className="message-item-chat system-chat">
                                             <div className="system-message">
-                                                {userMap[msg.content] ? (
-                                                    <>
-                                                        <strong>{userMap[msg.content].name}</strong>{" "}
-                                                        {msg.action === 'join' ? "đã tham gia nhóm."  : "đã rời khỏi nhóm."}
-                                                    </>
+                                                {/* {userMap[msg.content] ? (
+                                                    <> */}
+                                                        <strong>{msg.content}</strong>{" "}
+                                                        {msg.action === 'join' ? "đã được thêm vào nhóm."  : "đã rời khỏi nhóm."}
+                                                    {/* </>
                                                 ) : (
                                                 msg.content // Nếu chưa có tên hiển thị email
-                                                )}
+                                                )} */}
                                             </div>
                                         </div>
                                     );
@@ -1780,13 +2075,46 @@ const Home = () => {
                                                 ))}
                                             </div>
                                         )}
-                                        {msg.reactions && msg.reactions.length > 0 && (
+                                        {/* {msg.reactions && msg.reactions.length > 0 && (
                                             <div style={{ fontSize: '14px', marginTop: '4px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                                 {msg.reactions.map((r, idx) => (
                                                     <span key={idx} style={{ background: '#eee', padding: '2px 6px', borderRadius: '12px' }}>
                                                         {r.reaction} {r.senderEmail === user.email ? '(Bạn)' : ''}
                                                     </span>
                                                 ))}
+                                            </div>
+                                        )} */}
+                                        {msg.reactions && msg.reactions.length > 0 && (
+                                            <div
+                                                style={{
+                                                fontSize: '14px',
+                                                marginTop: '4px',
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                gap: '4px',
+                                                }}
+                                            >
+                                                {msg.reactions.map((r, idx) => {
+                                                const displayName =
+                                                    r.senderEmail === user.email
+                                                    ? 'Bạn'
+                                                    : userMap[r.senderEmail]?.name || r.senderEmail;
+
+                                                return (
+                                                    <span
+                                                    key={idx}
+                                                    style={{
+                                                        background: '#eee',
+                                                        padding: '2px 6px',
+                                                        borderRadius: '12px',
+                                                        cursor: 'default',
+                                                    }}
+                                                    title={displayName} // 👈 Tên chỉ hiển thị khi hover vào
+                                                    >
+                                                    {r.reaction}
+                                                    </span>
+                                                );
+                                                })}
                                             </div>
                                         )}
                                         {hoveredMsgId === msg.messageId && (
@@ -1842,6 +2170,17 @@ const Home = () => {
                                                         Thu hồi tin nhắn
                                                     </div>
                                                  )}
+                                                 <div
+                                                    className="message-option"
+                                                    style={{ padding: '8px', cursor: 'pointer' }}
+                                                    onClick={() => {
+                                                        setSelectedMsg(msg);
+                                                        setShowForwardModal(true);
+                                                        setOpenOptionsMsgId(null);
+                                                    }}
+                                                    >
+                                                    Chuyển tiếp
+                                                </div>
                                             </div>
                                         )}
 
@@ -2084,7 +2423,7 @@ const Home = () => {
                                             <p className="text-icon">Thêm thành viên</p>
                                         </div>
                                         
-                                        {currentUserId === selectedUser.creatorId && (
+                                        {selectedUser.admins?.includes(currentUserId)&& (
                                             <div className="btn-addgroup" onClick={deleteGroup}>
                                             <DeleteOutlined className="icon-pin"/>
                                             <p className="text-icon">Xóa nhóm</p>
@@ -2241,6 +2580,11 @@ const Home = () => {
                                                     Rời nhóm
                                                 </div>
                                             )}
+                                            {selectedUser.admins?.includes(currentUserId) && (
+                                                <div className="menu-item" onClick={() => toggleMemberInvite(groupId)}>
+                                                    {allowMemberInvite ? 'Tắt quyền mời thành viên' : 'Bật quyền mời thành viên'}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
@@ -2374,6 +2718,33 @@ const Home = () => {
                         </div>
                     </Modal>
                 )}
+
+                <Modal
+                    open={showForwardModal}
+                    onCancel={() => setShowForwardModal(false)}
+                    onOk={onConfirmForward}
+                    title="Chuyển tiếp tin nhắn"
+                    >
+                    <div>
+                        <label>Chọn người nhận:</label>
+                        <Select
+                        style={{ width: '100%' }}
+                        placeholder="Chọn nhóm hoặc bạn bè"
+                        onChange={(value) => setForwardTarget(value)}
+                        options={[
+                            ...groups.map(group => ({
+                                label: group.name,
+                                value: `group-${group.groupId}`
+                            })),
+                            ...friends.map(friend => ({
+                                label: friend.fullName,
+                                value: `user-${friend.email}`
+                            }))
+                        ]}
+                        />
+                    </div>
+                </Modal>
+
             </div>
         </div>
     );

@@ -37,15 +37,18 @@ import AppRoutes from './routes/routes';
 import './App.css';
 import { MessagesContext } from './context/MessagesContext';
 import { UnreadMessagesProvider } from './context/UnreadMessagesContext';
+import { GroupProvider } from './context/GroupContext';
 
 const App: React.FC = () => {
   return (
     <Router>
-      <UnreadMessagesProvider>
-        <MessagesContext>
-          <AppRoutes />
-        </MessagesContext>
-      </UnreadMessagesProvider>
+      <GroupProvider>
+        <UnreadMessagesProvider>
+          <MessagesContext>
+            <AppRoutes />
+          </MessagesContext>
+        </UnreadMessagesProvider>
+      </GroupProvider>
     </Router>
   );
 };

@@ -88,10 +88,12 @@ const Login: React.FC = () => {
             const user = response.data.user;
             localStorage.setItem('user', JSON.stringify(response.data.user));
             // 👉 Emit trạng thái online sau khi đăng nhập thành công
-            socket.emit("userStatus", {
-                status: "online",
-                email: user.email
-            });
+            if (socket && socket.connected) {
+                socket.emit("userStatusWeb", {
+                    status: "online",
+                    email: user.email
+                });
+            }   
             
             navigate('/user/home');
         } catch (error: any) {
@@ -110,17 +112,17 @@ const Login: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        if (user.email) {
-            // Emit trạng thái online khi người dùng đăng nhập
-            socket.emit("userStatus", {
-                status: "online",
-                email: user.email
-            });
-            console.log("User status emitted: ", user.email);
-        }
-    }, []);
+    // useEffect(() => {
+    //     const user = JSON.parse(localStorage.getItem('user') || '{}');
+    //     if (user.email) {
+    //         // Emit trạng thái online khi người dùng đăng nhập
+    //         socket.emit("userStatus", {
+    //             status: "online",
+    //             email: user.email
+    //         });
+    //         console.log("User status emitted: ", user.email);
+    //     }
+    // }, []);
 
     return (
         <div className="login-container">

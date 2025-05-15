@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import Modal from "react-modal";
 import { useMessageContext } from "../context/MessagesContext";
 import { useUnreadMessages } from '../context/UnreadMessagesContext';
+import { useGroupContext } from '../context/GroupContext';
 import socket from 'routes/socket';
 
 // Định nghĩa interface cho dữ liệu user
@@ -92,6 +93,15 @@ interface UnfriendResponse {
   message: string;
 }
 
+interface UserResponse{
+  success: boolean;
+  user: {
+      fullName?: string;
+      email: string;
+      avatar?: string;
+  };
+};
+
 type CombinedItem = 
   | (Friend & { type: "friend" })
   | (Group & { type: "group" });
@@ -129,7 +139,8 @@ const Navbar = () => {
     const [hasIncomingRequest, setHasIncomingRequest] = useState(false);
 
     const [friends, setFriends] = useState<Friend[]>([]);
-    const [groups, setGroups] = useState<Group[]>([]); 
+    //const [groups, setGroups] = useState<Group[]>([]); 
+    const { groups, fetchGroups, setGroups } = useGroupContext(); 
 
     const { lastMessages, updateLastMessage } = useMessageContext()!;
     // const displayLastMessageTime = lastMessageTime ? lastMessageTime.toString().slice(0, 10) : 'Chưa có tin nhắn';
@@ -150,6 +161,8 @@ const Navbar = () => {
     const currentUserEmail = users.email ;
 
     const { unreadMessages, removeUnreadMessage, isInitialized  } = useUnreadMessages();
+
+
 
     
 
@@ -223,8 +236,15 @@ const Navbar = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('token');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        // Emit offline trước khi xóa user
+          if (user?.email && socket?.connected) {
+              socket.emit("userStatusWeb", {
+                  status: "offline",
+                  email: user.email
+            });
+        }
         navigate('/login');
-        socket.emit('userStatus', { status: 'offline' });
     };
 
 
@@ -263,10 +283,10 @@ const Navbar = () => {
             const updated = alreadyExists ? existing : [newUser, ...existing];
     
             localStorage.setItem("searchedUsers", JSON.stringify(updated));
-    
+            console.log("Searched Users:", updated);
             // 👉 chỉ hiện kết quả mới tìm
             setSearchResult(newUser);
-            setSearchedUsers([]); // Ẩn danh sách cũ
+            setSearchedUsers(updated); // Ẩn danh sách cũ
             setNotFound(false);
             setIsSearching(true);
           }  else {
@@ -282,34 +302,62 @@ const Navbar = () => {
       }
     };
 
+    // useEffect(() => {
+    //   if (isSearching && !searchResult) {
+    //     const stored = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
+
+    //     const fiveDaysAgo = new Date();
+    //     fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 9000);
+
+    //     // Cập nhật lại thông tin người dùng mới nhất từ server
+    //     const fetchUpdatedUsers = async () => {
+    //       const refreshed = await Promise.all(
+    //         stored.map(async (user: any) => {
+    //           try {
+    //             const isEmail = searchTerm.includes('@');
+    //             const params = isEmail
+    //               ? { email: searchTerm.trim() }
+    //               : { phoneNumber: searchTerm.trim() };
+
+    //             const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, { params });
+    //             return { ...response.data.data, searchedAt: user.searchedAt };
+    //           } catch {
+    //             return user; // fallback nếu bị lỗi
+    //           }
+    //         })
+    //       );
+    //       const filtered = refreshed.filter(
+    //         (user: any) => new Date(user.searchedAt) >= fiveDaysAgo
+    //       );
+    //       setSearchedUsers(filtered);
+    //     };
+
+    //     fetchUpdatedUsers();
+    //   }
+    // }, [isSearching, searchResult]);
+
     useEffect(() => {
       if (isSearching && !searchResult) {
         const stored = JSON.parse(localStorage.getItem("searchedUsers") || "[]");
 
-        const fiveDaysAgo = new Date();
-        fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
-
-        // Cập nhật lại thông tin người dùng mới nhất từ server
         const fetchUpdatedUsers = async () => {
           const refreshed = await Promise.all(
             stored.map(async (user: any) => {
               try {
-                const isEmail = searchTerm.includes('@');
+                const isEmail = user.email && user.email.includes('@'); 
                 const params = isEmail
-                  ? { email: searchTerm.trim() }
-                  : { phoneNumber: searchTerm.trim() };
+                  ? { email: user.email }
+                  : { phoneNumber: user.phoneNumber };
 
                 const response = await axios.get<SearchUserResponse>(API_ENDPOINTS.search, { params });
                 return { ...response.data.data, searchedAt: user.searchedAt };
               } catch {
-                return user; // fallback nếu bị lỗi
+                return user; 
               }
             })
           );
-          const filtered = refreshed.filter(
-            (user: any) => new Date(user.searchedAt) >= fiveDaysAgo
-          );
-          setSearchedUsers(filtered);
+
+          setSearchedUsers(refreshed);
         };
 
         fetchUpdatedUsers();
@@ -597,26 +645,26 @@ const Navbar = () => {
       }
     }, [selectedUserSearch]);
 
-    const fetchGroups = async () => {
-      try {
-        const token = localStorage.getItem('token'); // Lấy token từ localStorage
-        const response = await axios.get<GroupResponse>(API_ENDPOINTS.getGroups, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+    // const fetchGroups = async () => {
+    //   try {
+    //     const token = localStorage.getItem('token'); // Lấy token từ localStorage
+    //     const response = await axios.get<GroupResponse>(API_ENDPOINTS.getGroups, {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //     });
 
-        if (response.data.success) {
-          setGroups(response.data.data); // Cập nhật state nhóm
-        } else {
-          console.error('Error fetching groups:', response.data.message);
-        }
-      } catch (error) {
-        console.error('Error fetching groups:', error);
-      } finally {
-        // setLoading(false);
-      }
-    };
+    //     if (response.data.success) {
+    //       setGroups(response.data.data); // Cập nhật state nhóm
+    //     } else {
+    //       console.error('Error fetching groups:', response.data.message);
+    //     }
+    //   } catch (error) {
+    //     console.error('Error fetching groups:', error);
+    //   } finally {
+    //     // setLoading(false);
+    //   }
+    // };
 
     useEffect(() => {
       fetchGroups();
@@ -627,7 +675,7 @@ const Navbar = () => {
       
     useEffect(() => {
         // Lấy tin nhắn cuối từ localStorage khi component mount
-        const stored = localStorage.getItem('lastMessage');
+        const stored = localStorage.getItem(`lastMessages_${currentUserEmail}`);
         if (stored) {
             setStoredMessage(JSON.parse(stored));
         }
@@ -673,6 +721,7 @@ const Navbar = () => {
       );
       if (response.data.success) {
         alert('Tạo nhóm thành công!');
+        fetchGroups(); // Cập nhật danh sách nhóm
         handleCloseModalGroup(); // Đóng modal
         // fetchGroups();
         // Bạn có thể thêm: load lại danh sách nhóm nếu muốn
@@ -740,7 +789,59 @@ const Navbar = () => {
     fetchData();
   }, [friends, groups]);
 
-if (!isInitialized) return null;
+  const [emailToNameMap, setEmailToNameMap] = useState<Record<string, string>>({});
+
+
+  const getFullNameByEmail = async (senderEmail: string) => {
+
+    if (emailToNameMap[senderEmail]) return emailToNameMap[senderEmail];
+
+    try {
+        const token = localStorage.getItem('token');
+         const response = await axios.get<UserResponse>(`${API_ENDPOINTS.getProfileByEmail(senderEmail)}`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        const data = response.data;
+
+        if (data.success && data.user) {
+            setEmailToNameMap((prev) => ({ ...prev, [senderEmail]: data.user.fullName || 'Người dùng' }));
+
+            return data.user.fullName || 'Người dùng'; // Trả về fullName hoặc 'Người dùng' nếu không có tên
+        } else {
+            return 'Người dùng';
+        }
+    } catch (error) {
+        console.error('Error fetching sender name:', error);
+        return 'Người dùng';
+    }
+  };
+
+  useEffect(() => {
+    const fetchSenderNames = async () => {
+      const missingEmails: string[] = [];
+
+      [...combinedList].forEach(item => {
+        const id = item.type === "friend" ? item.email : item.groupId;
+        const last = lastMessages[id];
+        const senderEmail = last?.senderEmail;
+
+        if (senderEmail && !emailToNameMap[senderEmail] && senderEmail !== currentUserEmail) {
+          missingEmails.push(senderEmail);
+        }
+      });
+
+      // Lấy từng tên người dùng còn thiếu
+      for (const email of missingEmails) {
+        await getFullNameByEmail(email);
+      }
+    };
+
+    fetchSenderNames();
+  }, [combinedList]);
+
+  if (!isInitialized) return null;
   
     
 
@@ -960,7 +1061,8 @@ if (!isInitialized) return null;
                                         if (!last?.senderEmail) return "";
                                         if (last.senderEmail === currentUserEmail) return "Bạn";
                                         if (item.type === "friend") return item.fullName; // Chat đơn thì dùng tên người kia
-                                        if (item.type === "group") return last.senderEmail || "Người dùng"; // Chat nhóm thì dùng tên người gửi từ tin nhắn
+                                        //if (item.type === "group") return last.senderEmail || "Người dùng"; // Chat nhóm thì dùng tên người gửi từ tin nhắn
+                                        if (item.type === "group") return emailToNameMap[last.senderEmail] || last.senderEmail || "Người dùng";
                                     })();
 
                                     

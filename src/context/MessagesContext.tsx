@@ -43,19 +43,33 @@ const MessageContext = createContext<MessageContextType | null>(null);
 
 export const MessagesContext = ({ children }: { children: React.ReactNode }) => {
   const [lastMessages, setLastMessages] = useState<Record<string, LastMessageData>>(() => {
-    const stored = localStorage.getItem("lastMessages");
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const currentUserEmail = user.email;
+    const stored = localStorage.getItem(`lastMessages_${currentUserEmail}`);
     return stored ? JSON.parse(stored) : {};
   });
 
  
 
   const updateLastMessage = (id: string, message: string, time: Date, senderEmail: string) => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const currentUserEmail = user.email;
+    // const newData = {
+    //   ...lastMessages,
+    //   [id]: { message, time, senderEmail},
+    // };
+    // setLastMessages(newData);
+    // localStorage.setItem(`lastMessages_${currentUserEmail}`, JSON.stringify(newData));
+    const key = `lastMessages_${currentUserEmail}`;
+    const existing = JSON.parse(localStorage.getItem(key) || "{}");
+
     const newData = {
-      ...lastMessages,
-      [id]: { message, time, senderEmail},
+      ...existing,
+      [id]: { message, time, senderEmail },
     };
+
+    localStorage.setItem(key, JSON.stringify(newData));
     setLastMessages(newData);
-    localStorage.setItem("lastMessages", JSON.stringify(newData));
   };
 
   return (
