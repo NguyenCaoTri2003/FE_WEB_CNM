@@ -103,6 +103,9 @@ interface BaseMessage {
     isSystem?: boolean;
     action?: string; 
     groupId?: string;
+    isForwarded?: boolean;
+    originalGroupId?: string; 
+    originalSenderEmail?: string; 
 }
 
 export interface Message extends BaseMessage {
@@ -240,6 +243,7 @@ const Home = () => {
     const [editedName, setEditedName] = useState("");
 
     const [userMap, setUserMap] = useState<{ [key: string]: { name: string; avatar: string } }>({});
+    const [groupMap, setGroupMap] = useState<{ [groupId: string]: { name: string } }>({});
 
     const [friendStatuses, setFriendStatuses] = useState<{ [email: string]: boolean }>({});
 
@@ -356,11 +360,19 @@ const Home = () => {
             });
 
             // 🔔 Gửi cho người khác qua socket
-            socket.emit("messageReaction", {
-                messageId,
-                reaction,
-                receiverEmail: isGroup ? null : selectedUser.email,
-            });
+            if (isGroup) {
+                socket.emit("groupMessageReaction", {
+                    messageId,
+                    reaction,
+                    groupId: selectedUser.groupId, // 👈 gửi groupId
+                });
+            } else {
+                socket.emit("messageReaction", {
+                    messageId,
+                    reaction,
+                    receiverEmail: selectedUser.email, // 👈 gửi email người nhận
+                });
+            }
 
             // ✅ Cập nhật UI local cho chính mình
             handleMessageReaction({
@@ -409,12 +421,18 @@ const Home = () => {
     useEffect(() => {
         if (!socket) return;
 
-        socket.on("messageReaction", handleMessageReaction);
+        const onReaction = (data: any) => {
+            console.log("📩 Reaction received:", data);
+            handleMessageReaction(data);
+        };
+
+
+        socket.on("messageReaction", onReaction);
 
         return () => {
-            socket.off("messageReaction", handleMessageReaction);
+            socket.off("messageReaction", onReaction);
         };
-    }, [socket]);
+    }, [socket, handleMessageReaction]);
 
 
 
@@ -761,6 +779,234 @@ const Home = () => {
         }
     };
 
+    // const handleForwardMessage = async (
+    //     messageId: string,
+    //     sourceGroupId: string,
+    //     targetGroupId?: string,
+    //     targetEmail?: string
+    //     ) => {
+    //     if (!messageId || !sourceGroupId) {
+    //         console.warn("Thiếu messageId hoặc sourceGroupId");
+    //         return;
+    //     }
+
+    //     if (!targetGroupId && !targetEmail) {
+    //         console.warn("Phải cung cấp targetGroupId hoặc targetEmail");
+    //         return;
+    //     }
+
+    //     const token = localStorage.getItem('token');
+    //     if (!token) {
+    //         console.warn("Không tìm thấy token");
+    //         return;
+    //     }
+
+    //     try {
+    //         const url = API_ENDPOINTS.forwardMessageGroup(sourceGroupId, messageId);
+            
+
+    //         const body = {
+    //         ...(targetGroupId && { targetGroupId }),
+    //         ...(targetEmail && { targetEmail }),
+    //         };
+
+    //         const response = await axios.post<ApiResponse>(url, body, {
+    //         headers: {
+    //             Authorization: `Bearer ${token}`
+    //         }
+    //         });
+
+    //         const forwardedMsg = response.data.data;
+
+    //         const sentTo =
+    //             targetGroupId && selectedUser?.type === 'group'
+    //                 ? targetGroupId
+    //                 : targetEmail || forwardedMsg.receiverEmail;
+    //         const timeSent = new Date(forwardedMsg.createdAt);
+    //         updateLastMessage(sentTo, forwardedMsg.content, timeSent, forwardedMsg.senderEmail);
+    //         if(targetGroupId && selectedUser?.type === 'group') {
+    //                 socket.emit("groupMessage", {
+    //                     groupId: targetGroupId,
+    //                     message: {
+    //                         messageId: forwardedMsg.messageId,
+    //                         content: forwardedMsg.content,
+    //                         createdAt: forwardedMsg.createdAt,
+    //                         senderEmail: forwardedMsg.senderEmail,
+    //                     }
+    //                 });
+    //             }  else {
+    //                 socket.emit("newMessage", {
+    //                     receiverEmail: targetEmail,
+    //                     message: {
+    //                         messageId: forwardedMsg.messageId,
+    //                         content: forwardedMsg.content,
+    //                         createdAt: forwardedMsg.createdAt,
+    //                         senderEmail: forwardedMsg.senderEmail,
+    //                     }
+    //                 });
+    //             }
+
+    //         // Cập nhật giao diện: thêm tin nhắn mới nếu muốn
+    //         if (
+    //             (targetGroupId && selectedUser?.type === 'group' && selectedUser.groupId === targetGroupId) ||
+    //             (targetEmail && selectedUser?.type === 'friend' && selectedUser.email === targetEmail)
+    //         ) {
+    //             setChatMessages((prev) => [...prev, forwardedMsg]);
+    //         }
+
+    //         if (response.data.success) {
+                
+    //             setGroupMembers(response.data.data); // cập nhật lại group
+    //             setAllowMemberInvite(response.data.data.allowMemberInvite);
+    //             notification.success({
+    //                 message: "Chuyển tiếp tin nhắn thành công!",
+    //             });
+    //         }
+    //         setShowForwardModal(false);
+    //     } catch (error: any) {
+    //         console.error("Lỗi khi chuyển tiếp tin nhắn:", error.response?.data || error.message);
+    //         notification.error({
+    //             message: "Không chuyển tiếp tin nhắn được!",
+    //         });
+    //     } 
+    // };
+
+    const handleForwardMessages = async (
+        selectedMsg: BaseMessage, // truyền cả object để dễ xác định type
+        targetGroupId?: string,
+        targetEmail?: string
+    ) => {
+        const messageId = selectedMsg.messageId;
+        const sourceType = selectedMsg.groupId ? 'group' : 'user';
+        const sourceGroupId = selectedMsg.groupId;
+
+        if (!messageId) {
+            console.warn("Thiếu messageId");
+            return;
+        }
+
+        if (!targetGroupId && !targetEmail) {
+            console.warn("Phải cung cấp targetGroupId hoặc targetEmail");
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            console.warn("Không tìm thấy token");
+            return;
+        }
+
+        try {
+            const url = API_ENDPOINTS.forwardMessage(messageId);
+
+            const body = {
+                sourceType,
+                ...(sourceGroupId && { sourceGroupId }),
+                ...(targetGroupId && { targetGroupId }),
+                ...(targetEmail && { targetEmail }),
+            };
+
+            const response = await axios.post<ApiResponse>(url, body, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            const forwardedMsg = response.data.data;
+
+            const sentTo =
+                targetGroupId && selectedUser?.type === 'group'
+                    ? targetGroupId
+                    : targetEmail || forwardedMsg.receiverEmail;
+            const timeSent = new Date(forwardedMsg.createdAt);
+            updateLastMessage(sentTo, forwardedMsg.content, timeSent, forwardedMsg.senderEmail);
+            if(targetGroupId ) {
+                    socket.emit("groupMessage", {
+                        groupId: targetGroupId,
+                        message: {
+                            messageId: forwardedMsg.messageId,
+                            content: forwardedMsg.content,
+                            createdAt: forwardedMsg.createdAt,
+                            senderEmail: forwardedMsg.senderEmail,
+                            isForwarded: forwardedMsg.isForwarded,
+                            originalMessageId: forwardedMsg.originalMessageId,
+                            originalGroupId: forwardedMsg.originalGroupId,
+                            originalSenderEmail: forwardedMsg.originalSenderEmail,
+                        }
+                    });
+                }  else {
+                    socket.emit("newMessage", {
+                        receiverEmail: targetEmail,
+                        message: {
+                            messageId: forwardedMsg.messageId,
+                            content: forwardedMsg.content,
+                            createdAt: forwardedMsg.createdAt,
+                            senderEmail: forwardedMsg.senderEmail,
+                            isForwarded: forwardedMsg.isForwarded,
+                            originalMessageId: forwardedMsg.originalMessageId,
+                            originalGroupId: forwardedMsg.originalGroupId,
+                            originalSenderEmail: forwardedMsg.originalSenderEmail,
+                        }
+                    });
+                }
+
+            // Cập nhật giao diện: thêm tin nhắn mới nếu muốn
+            if (
+                (targetGroupId && selectedUser?.type === 'group' && selectedUser.groupId === targetGroupId) ||
+                (targetEmail && selectedUser?.type === 'friend' && selectedUser.email === targetEmail)
+            ) {
+                setChatMessages((prev) => [...prev, forwardedMsg]);
+            }
+
+            if (response.data.success) {
+                
+                setGroupMembers(response.data.data); // cập nhật lại group
+                setAllowMemberInvite(response.data.data.allowMemberInvite);
+                notification.success({
+                    message: "Chuyển tiếp tin nhắn thành công!",
+                });
+            }
+            setShowForwardModal(false);
+
+        } catch (error: any) {
+            console.error("Lỗi khi chuyển tiếp tin nhắn:", error.response?.data || error.message);
+            notification.error({
+                message: "Không chuyển tiếp tin nhắn được!",
+            });
+        }
+    };
+
+
+    const onConfirmForward = () => {
+        if (!selectedMsg) {
+            notification.error({ message: "Chưa chọn tin nhắn để chuyển tiếp" });
+            return;
+        }
+        if (!forwardTarget) {
+            notification.error({ message: "Chưa chọn người nhận" });
+            return;
+        }
+
+        // Tách prefix group- hoặc user-
+        // if (forwardTarget.startsWith("group-")) {
+        //     const targetGroupId = forwardTarget.replace("group-", "");
+        //     handleForwardMessage(selectedMsg.messageId, selectedMsg.groupId!, targetGroupId, undefined);
+        // } else if (forwardTarget.startsWith("user-")) {
+        //     const targetEmail = forwardTarget.replace("user-", "");
+        //     handleForwardMessage(selectedMsg.messageId,  selectedMsg.groupId!, undefined, targetEmail);
+        // }
+
+        if (forwardTarget.startsWith("group-")) {
+            const targetGroupId = forwardTarget.replace("group-", "");
+            handleForwardMessages(selectedMsg, targetGroupId, undefined);
+        } else if (forwardTarget.startsWith("user-")) {
+            const targetEmail = forwardTarget.replace("user-", "");
+            handleForwardMessages(selectedMsg, undefined, targetEmail);
+        }
+
+        setShowForwardModal(false);
+    };
+
     useEffect(() => {
         if (socket && selectedUser?.type === 'group' && selectedUser.groupId) {
             socket.emit("joinGroup", { groupId: selectedUser.groupId});
@@ -793,6 +1039,10 @@ const Home = () => {
             const { groupId, message } = data;
             console.log("👤 currentUserEmail trong useEffect:", currentUserEmail);
             // Nếu chính mình gửi thì bỏ qua vì đã xử lý ở sendMessage
+            if (!(selectedUser?.type === "group" && selectedUser.groupId === groupId)) {
+                updateLastMessage(groupId, message.content, new Date(message.createdAt), message.senderEmail);
+            }
+
             if (message.senderEmail === currentUserEmail) return;
 
             updateLastMessage(groupId, message.content, new Date(message.createdAt), message.senderEmail);
@@ -1572,8 +1822,42 @@ const Home = () => {
             if (msg.senderEmail && !userMap[msg.senderEmail]) {
                 fetchUserName(msg.senderEmail);
             }
+            if (msg.isForwarded && msg.originalSenderEmail) {
+                fetchUserName(msg.originalSenderEmail);
+            }
         });
     }, [chatMessages]);
+
+    const fetchGroupName = async (groupId: string) => {
+        if (groupMap[groupId]) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get<ApiResponse>(`${API_ENDPOINTS.getGroup(groupId)}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            const groupName = response.data.data.name || groupId;
+
+            setGroupMap(prev => ({
+                ...prev,
+                [groupId]: { name: groupName }
+            }));
+        } catch (error) {
+            console.error('Lỗi khi lấy tên nhóm:', error);
+        }
+    };
+
+    useEffect(() => {
+        chatMessages.forEach((msg) => {
+            if (msg.isForwarded && msg.originalGroupId) {
+                fetchGroupName(msg.originalGroupId);
+            }
+        });
+    }, [chatMessages]);
+
     
     const deleteGroup = async () => {
         try {
@@ -1824,85 +2108,7 @@ const Home = () => {
         }
     };
 
-    const handleForwardMessage = async (
-        messageId: string,
-        sourceGroupId: string,
-        targetGroupId?: string,
-        targetEmail?: string
-        ) => {
-        if (!messageId || !sourceGroupId) {
-            console.warn("Thiếu messageId hoặc sourceGroupId");
-            return;
-        }
-
-        if (!targetGroupId && !targetEmail) {
-            console.warn("Phải cung cấp targetGroupId hoặc targetEmail");
-            return;
-        }
-
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.warn("Không tìm thấy token");
-            return;
-        }
-
-        try {
-            const url = API_ENDPOINTS.forwardMessageGroup(sourceGroupId, messageId);
-            
-
-            const body = {
-            ...(targetGroupId && { targetGroupId }),
-            ...(targetEmail && { targetEmail }),
-            };
-
-            const response = await axios.post<ApiResponse>(url, body, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-            });
-
-            const forwardedMsg = response.data.data;
-
-            // Cập nhật giao diện: thêm tin nhắn mới nếu muốn
-            setChatMessages((prev) => [...prev, forwardedMsg]);
-
-            if (response.data.success) {
-                setGroupMembers(response.data.data); // cập nhật lại group
-                setAllowMemberInvite(response.data.data.allowMemberInvite);
-                notification.success({
-                    message: "Chuyển tiếp tin nhắn thành công!",
-                });
-            }
-            setShowForwardModal(false);
-        } catch (error: any) {
-            console.error("Lỗi khi chuyển tiếp tin nhắn:", error.response?.data || error.message);
-            notification.error({
-                message: "Không chuyển tiếp tin nhắn được!",
-            });
-        } 
-    };
-
-    const onConfirmForward = () => {
-        if (!selectedMsg) {
-            notification.error({ message: "Chưa chọn tin nhắn để chuyển tiếp" });
-            return;
-        }
-        if (!forwardTarget) {
-            notification.error({ message: "Chưa chọn người nhận" });
-            return;
-        }
-
-        // Tách prefix group- hoặc user-
-        if (forwardTarget.startsWith("group-")) {
-            const targetGroupId = forwardTarget.replace("group-", "");
-            handleForwardMessage(selectedMsg.messageId, selectedMsg.groupId!, targetGroupId, undefined);
-        } else if (forwardTarget.startsWith("user-")) {
-            const targetEmail = forwardTarget.replace("user-", "");
-            handleForwardMessage(selectedMsg.messageId, undefined!, undefined, targetEmail);
-        }
-
-        setShowForwardModal(false);
-    };
+    
 
 
     
@@ -2035,6 +2241,32 @@ const Home = () => {
                                                 )}
                                             </div>
                                         )}
+
+                                        {msg.isForwarded && (
+                                            <div style={{
+                                                fontSize: '12px',
+                                                color: '#999',
+                                                fontStyle: 'italic',
+                                                marginBottom: '4px'
+                                            }}>
+                                                {msg.isForwarded && (
+                                                    <div className="forward-label">
+                                                        {msg.originalGroupId ? (
+                                                            groupMap[msg.originalGroupId]?.name
+                                                                ? `🔁 Đã chuyển tiếp từ nhóm ${groupMap[msg.originalGroupId].name}`
+                                                                : `🔁 Đã chuyển tiếp từ nhóm (${msg.originalGroupId})`
+                                                        ) : msg.originalSenderEmail ? (
+                                                            userMap[msg.originalSenderEmail]?.name
+                                                                ? `🔁 Đã chuyển tiếp từ tin nhắn của ${userMap[msg.originalSenderEmail].name}`
+                                                                : `🔁 Đã chuyển tiếp từ tin nhắn của ${msg.originalSenderEmail}`
+                                                        ) : (
+                                                            `🔁 Đã chuyển tiếp...`
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
                                         {msg.isRecalled ? (
                                             <i style={{ color: 'gray' }}>Tin nhắn đã được thu hồi</i>
                                         ) : msg.type === 'image' ||  isImage ? (
@@ -2196,7 +2428,7 @@ const Home = () => {
                                             </div>
                                         )}
 
-                                            <Modal
+                                            {/* <Modal
                                                 open={showModal}
                                                 onCancel={() => setShowModal(false)}
                                                 footer={null}
@@ -2215,7 +2447,7 @@ const Home = () => {
                                                     Xóa tin nhắn
                                                 </Button>
 
-                                                {/* Chỉ hiển thị nếu trong 2 phút */}
+                                               
                                                 {selectedMsg && canRecallMessage(selectedMsg.createdAt) && (
                                                     <Button
                                                     onClick={() => {
@@ -2227,7 +2459,7 @@ const Home = () => {
                                                         Thu hồi tin nhắn
                                                     </Button>
                                                 )}
-                                            </Modal>
+                                            </Modal> */}
 
                                             
                                     </div>

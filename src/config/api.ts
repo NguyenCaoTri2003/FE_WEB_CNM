@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
     recall: (messageId: string) => `${API_BASE_URL}/messages/recall/${messageId}`,
     deleteMessage: (messageId: string) => `${API_BASE_URL}/messages/delete/${messageId}`,
     deleteMessageBoth: (messageId: string) => `${API_BASE_URL}/messages/deleteboth/${messageId}`,
+    forwardMessage: (messageId: string) => `${API_BASE_URL}/messages/${messageId}/forward`,
 
     reaction : `${API_BASE_URL}/messages/reaction`,
     reactionGroup : (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/reactions`,
@@ -44,6 +45,7 @@ export const API_ENDPOINTS = {
     //add group
     createGroup: `${API_BASE_URL}/groups`,
     getGroups: `${API_BASE_URL}/groups`,
+    getGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}`,
     updateGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}`,
     updateGroupInfo: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/info`,
     getGroupMembers: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/members`,
@@ -57,7 +59,6 @@ export const API_ENDPOINTS = {
     addDeputy: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/deputies`,
     removeDeputy: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/deputiesweb`,
     removeAdmin: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/adminsweb`,
-    forwardMessage: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/forward`,
     recallGroupMessage: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/recall`,
     deleteGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}`,
     leaveGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/leaveweb`,
