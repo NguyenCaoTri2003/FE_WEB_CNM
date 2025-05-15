@@ -992,6 +992,10 @@ const Home = () => {
                         updateLastMessage(selectedUser.groupId, sentMsg.content, new Date(sentMsg.createdAt), myEmail);
                         setChatMessages(prev => [...prev, sentMsg]);
                         scrollToBottom();
+                        notification.success({
+                            message: 'Tải lên thành công',
+                            description: 'Tệp đã được gửi thành công.',
+                        });
                     }
 
                 } else if (selectedUser.type === 'friend') {
@@ -1021,10 +1025,18 @@ const Home = () => {
                         updateLastMessage(selectedUser.email, sentMsg.content, new Date(sentMsg.createdAt), myEmail);
                         setChatMessages(prev => [...prev, sentMsg]);
                         scrollToBottom();
+                        notification.success({
+                            message: 'Tải lên thành công',
+                            description: 'Tệp đã được gửi thành công.',
+                        });
                     }
                 }
             } else {
                 console.error('Lỗi upload:', result.message);
+                notification.error({
+                    message: 'Tải lên thất bại',
+                    description: result.message,
+                });
             }
         } catch (error) {
             console.error('Upload failed:', error);
@@ -2219,7 +2231,7 @@ const Home = () => {
 
                                             
                                     </div>
-                                    {isOwnMessage && (
+                                    {isOwnMessage && !msg.groupId && (
                                         <div style={{ fontSize: '11px', color: msg.status === 'read' ? '#151515' : '#a6a6a6' }}>
                                             {msg.status === 'read' ? 'Đã xem' : 'Đã gửi'}
                                         </div>
