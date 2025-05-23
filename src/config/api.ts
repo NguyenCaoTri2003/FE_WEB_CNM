@@ -31,7 +31,7 @@ export const API_ENDPOINTS = {
     getMessages: `${API_BASE_URL}/messages/conversation/`,
     markAsRead: (messageId: string) => `${API_BASE_URL}/messages/read/${messageId}`,
     recall: (messageId: string) => `${API_BASE_URL}/messages/recall/${messageId}`,
-    deleteMessage: (messageId: string) => `${API_BASE_URL}/messages/delete/${messageId}`,
+    deleteMessage: (messageId: string) => `${API_BASE_URL}/messages/deleteweb/${messageId}`,
     deleteMessageBoth: (messageId: string) => `${API_BASE_URL}/messages/deleteboth/${messageId}`,
     forwardMessage: (messageId: string) => `${API_BASE_URL}/messages/${messageId}/forward`,
 
@@ -64,5 +64,6 @@ export const API_ENDPOINTS = {
     leaveGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/leaveweb`,
     toggleMemberInvite: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/toggle-member-invite`,
     forwardMessageGroup: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/forward`,
+    deleteMessageGroup: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/user`,
 
 }; 

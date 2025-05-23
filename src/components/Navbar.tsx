@@ -5,7 +5,7 @@ import '../assets/styles/Navbar.css';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComments, faContactBook, faTools, faCloud, faSearch, faPencil, faPen } from "@fortawesome/free-solid-svg-icons";
 import { API_ENDPOINTS } from '../config/api';
-import { CameraFilled ,UserOutlined, SettingOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined, UsergroupAddOutlined, CameraOutlined ,UserAddOutlined, CloseOutlined, EllipsisOutlined, MoreOutlined } from "@ant-design/icons";
+import { CameraFilled ,UserOutlined, SettingOutlined, GlobalOutlined, QuestionCircleOutlined, UserSwitchOutlined, UsergroupAddOutlined, CameraOutlined ,UserAddOutlined, CloseOutlined, EllipsisOutlined, MoreOutlined, SettingTwoTone } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import Modal from "react-modal";
 import { useMessageContext } from "../context/MessagesContext";
@@ -133,7 +133,7 @@ const Navbar = () => {
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     
     const [isSearching, setIsSearching] = useState(false);
-    const [showContacts, setShowContacts] = useState(false);
+    const [activeTab, setActiveTab] = useState<"showHome" | "showContacts" | "showAllSetting" | null>("showHome");
 
     const [hasSentRequest, setHasSentRequest] = useState<boolean>(false);
     const [hasIncomingRequest, setHasIncomingRequest] = useState(false);
@@ -167,7 +167,6 @@ const Navbar = () => {
     
 
 
-    // console.log("LastMessages context:", lastMessages);
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -681,6 +680,8 @@ const Navbar = () => {
         }
     }, []);
 
+    // console.log("storedMessage context:", storedMessage);
+    // console.log("lastMessage context:", lastMessages);
     
 
   useEffect(() => {
@@ -864,18 +865,18 @@ const Navbar = () => {
 
           <div className="icons-info">
             <Link to="/user/home">
-              <div className="icon-chat">
+              <div className={`icon-chat ${activeTab === "showHome" ? "activeTab" : ""}`}>
                 <FontAwesomeIcon icon={faComments} 
                   onClick={() => {
-                    setShowContacts(false);
+                    setActiveTab("showHome")
                     fetchFriends();
                     fetchGroups();
                   }}
                 />
               </div>
             </Link>
-              <div className="icon-contact">
-                <FontAwesomeIcon icon={faContactBook} onClick={() => setShowContacts(true)}/>
+              <div className={`icon-contact ${activeTab === "showContacts" ? "activeTab" : ""}`}>
+                <FontAwesomeIcon icon={faContactBook} onClick={() =>  setActiveTab("showContacts")}/>
               </div>
           </div>
         </div>
@@ -903,7 +904,11 @@ const Navbar = () => {
                   <UserOutlined />
                   Thông tin tài khoản
               </div>
-              <div className="menu-item" onClick={() => {navigate('/setting'); setShowSettings(!showSettings)} } >
+              <div className="menu-item" 
+                onClick={() => {
+                  setActiveTab("showAllSetting");
+                  setShowSettings(!showSettings)} } 
+                >
                   <SettingOutlined />
                   Cài đặt
               </div>
@@ -1014,9 +1019,8 @@ const Navbar = () => {
             ) : (
                 <div className="left-section">
                   {/* khu vực danh sách chat và menu bạn bè */}
-                    
-                    {!showContacts ? (
-                        <div className="user-chat-section">
+                    {activeTab === "showHome" && (
+                      <div className="user-chat-section">
                             <div className="category-menu">
                                 <div className="btn-section">
                                     <button className="btn-prioritize active">Ưu tiên</button>
@@ -1198,7 +1202,8 @@ const Navbar = () => {
                                 <button onClick={() => setIsModalOpen(false)}>Đóng</button>
                             </Modal>
                         </div>
-                        ) : (
+                    )}
+                    {activeTab === "showContacts" && (
                         <div className='menu-contact'>
                             <Link to="list-friend">
                                 <div className='menu-item'>
@@ -1225,10 +1230,38 @@ const Navbar = () => {
                                 </div>
                             </Link>
                         </div>
-                        )}
+                    )}
+                    {activeTab === "showAllSetting" && (
+                      <div className='menu-contact'>
+                          <Link to="update-password">
+                              <div className='menu-item'>
+                                  <SettingTwoTone className="icon-adduser"/>
+                                  <p className='menu-item-name'>Cập nhật mật khẩu</p>
+                              </div>
+                          </Link>
+                          <Link to="list-group">
+                              <div className='menu-item'>
+                                  <UserAddOutlined className="icon-adduser"/>
+                                  <p className='menu-item-name'>Danh sách nhóm</p>
+                              </div>
+                          </Link>
+                          <Link to="request-friend">
+                              <div className='menu-item'>
+                                  <UserAddOutlined className="icon-adduser"/>
+                                  <p className='menu-item-name'>Lời mời kết bạn</p>
+                              </div>
+                          </Link>
+                          <Link to="danh-sach-loi-moi-vao-nhom">
+                              <div className='menu-item'>
+                                  <UserAddOutlined className="icon-adduser"/>
+                                  <p className='menu-item-name'>Lời mời vào nhóm</p>
+                              </div>
+                          </Link>
+                      </div>
+                    )}
                 </div>
                 )}
-
+            
             {/* Modal hiển thị thông tin chi tiết */}
             {selectedUserSearch && (
                 <Modal isOpen={isModalOpenUser} onRequestClose={handleCloseModal} className="user-modal" overlayClassName="overlay">
@@ -1251,7 +1284,7 @@ const Navbar = () => {
                             <div className="btn-info">
                                 {isFriend ? (
                                   <>  
-                                    <button className="btn-addfriend" onClick={() => unfriend(selectedUserSearch.email)}>Hủy kết bạn</button>
+                                    <button className="btn-addfriend" onClick={() => unfriend(selectedUserSearch.email)}>Xóa bạn bè</button>
                                     <button className="btn-chat">Nhắn tin</button>
                                   </>
                                   

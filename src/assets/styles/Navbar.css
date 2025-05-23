@@ -38,7 +38,7 @@
     gap: 25px;
 }
 .icon-chat{
-    background-color: #00388d;
+    background-color: #005ae0;
     padding: 10px;
     border-radius: 10%;
     cursor: pointer;
@@ -48,6 +48,9 @@
     padding: 10px;
     border-radius: 10%;
     cursor: pointer;
+}
+.activeTab{
+    background-color: #00388d;
 }
 .icon-chat:hover, .icon-contact:hover, .icon-cloud:hover, .icon-setting:hover{
     background-color: #00388d;

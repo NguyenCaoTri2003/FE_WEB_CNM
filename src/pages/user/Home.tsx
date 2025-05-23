@@ -106,6 +106,8 @@ interface BaseMessage {
     isForwarded?: boolean;
     originalGroupId?: string; 
     originalSenderEmail?: string; 
+    deletedBy?: string[];
+    deletedFor?: string[];
 }
 
 export interface Message extends BaseMessage {
@@ -656,46 +658,6 @@ const Home = () => {
     }
     }, [selectedUser]);
 
-    // Gửi tin nhắn
-
-    // const sendMessage = async () => {
-    //     if (!message.trim()) return;
-    
-    //     try {
-    //         const token = localStorage.getItem('token');
-    //         const response = await axios.post<SendMessageResponse>(
-    //             API_ENDPOINTS.sendMessage,
-    //             {
-    //                 content: message,
-    //                 receiverEmail: selectedUser.email,
-    //                 type: 'file',
-    //             },
-    //             {
-    //                 headers: {
-    //                     Authorization: `Bearer ${token}`
-    //                 }
-    //             }
-    //         );
-    //         scrollToBottom();
-            
-
-    //         if (response.data.success) {
-    //             setChatMessages(prev => [...prev, response.data.data]); 
-
-    //             //context mess
-    //             const messageContent = message;
-    //             const sentMsg = response.data.data;
-    //             setChatMessages(prev => [...prev, sentMsg]);
-
-    //             const timeSent = new Date(sentMsg.createdAt); // dùng thời gian từ backend cho chuẩn
-    //             updateLastMessage(selectedUser.email, sentMsg.content, timeSent);
-
-    //             setMessage('');
-    //         }
-    //     } catch (error) {
-    //         console.error('Lỗi khi gửi tin nhắn:', error);
-    //     }
-    // };
 
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const currentUserId = user.userId || user.id;
@@ -761,6 +723,7 @@ const Home = () => {
                     setChatMessages(prev => [...prev, sentMsg]);
                     const timeSent = new Date(sentMsg.createdAt);
                     updateLastMessage(selectedUser.email, sentMsg.content, timeSent, sentMsg.senderEmail);
+                    console.log("cua sent: ", selectedUser.email)
                     socket.emit("newMessage", {
                         receiverEmail: selectedUser.email,
                         message: {
@@ -779,97 +742,113 @@ const Home = () => {
         }
     };
 
-    // const handleForwardMessage = async (
-    //     messageId: string,
-    //     sourceGroupId: string,
-    //     targetGroupId?: string,
-    //     targetEmail?: string
-    //     ) => {
-    //     if (!messageId || !sourceGroupId) {
-    //         console.warn("Thiếu messageId hoặc sourceGroupId");
-    //         return;
-    //     }
+    const handleRecallMessage = async (
+        messageId?: string,
+        groupId?: string,
+        isGroup: boolean = false
+    ) => {
+        const token = localStorage.getItem('token');
+        if (!messageId) {
+            console.warn("messageId bị thiếu khi recall");
+            return;
+        }
 
-    //     if (!targetGroupId && !targetEmail) {
-    //         console.warn("Phải cung cấp targetGroupId hoặc targetEmail");
-    //         return;
-    //     }
+        try {
+            const url = isGroup
+                ? API_ENDPOINTS.recallGroupMessage(groupId!, messageId)
+                : API_ENDPOINTS.recall(messageId);
 
-    //     const token = localStorage.getItem('token');
-    //     if (!token) {
-    //         console.warn("Không tìm thấy token");
-    //         return;
-    //     }
+            const response = await axios.put(url, null, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
 
-    //     try {
-    //         const url = API_ENDPOINTS.forwardMessageGroup(sourceGroupId, messageId);
-            
+            const updatedMsg = (response.data as { data: Message }).data;
 
-    //         const body = {
-    //         ...(targetGroupId && { targetGroupId }),
-    //         ...(targetEmail && { targetEmail }),
-    //         };
+            setChatMessages((prevMessages) =>
+                prevMessages.map((msg) =>
+                    msg.messageId === updatedMsg.messageId ? updatedMsg : msg
+                )
+            );
 
-    //         const response = await axios.post<ApiResponse>(url, body, {
-    //         headers: {
-    //             Authorization: `Bearer ${token}`
-    //         }
-    //         });
+            const key = isGroup ? 
+                            groupId! : 
+                            updatedMsg.receiverEmail === user.email ? 
+                                updatedMsg.senderEmail : 
+                                updatedMsg.receiverEmail;
+            updateLastMessage(
+                key,
+                "Tin nhắn đã được thu hồi",
+                new Date(updatedMsg.createdAt),
+                updatedMsg.senderEmail
+            );
 
-    //         const forwardedMsg = response.data.data;
+            console.log("key", key)
 
-    //         const sentTo =
-    //             targetGroupId && selectedUser?.type === 'group'
-    //                 ? targetGroupId
-    //                 : targetEmail || forwardedMsg.receiverEmail;
-    //         const timeSent = new Date(forwardedMsg.createdAt);
-    //         updateLastMessage(sentTo, forwardedMsg.content, timeSent, forwardedMsg.senderEmail);
-    //         if(targetGroupId && selectedUser?.type === 'group') {
-    //                 socket.emit("groupMessage", {
-    //                     groupId: targetGroupId,
-    //                     message: {
-    //                         messageId: forwardedMsg.messageId,
-    //                         content: forwardedMsg.content,
-    //                         createdAt: forwardedMsg.createdAt,
-    //                         senderEmail: forwardedMsg.senderEmail,
-    //                     }
-    //                 });
-    //             }  else {
-    //                 socket.emit("newMessage", {
-    //                     receiverEmail: targetEmail,
-    //                     message: {
-    //                         messageId: forwardedMsg.messageId,
-    //                         content: forwardedMsg.content,
-    //                         createdAt: forwardedMsg.createdAt,
-    //                         senderEmail: forwardedMsg.senderEmail,
-    //                     }
-    //                 });
-    //             }
+            if (isGroup) {
+            socket.emit("recallGroupMessage", {
+                    groupId,
+                    messageId,
+                    senderEmail: user.email,
+                });
+            } else {
+                const receiverEmail =
+                    updatedMsg.receiverEmail === user.email
+                        ? updatedMsg.senderEmail
+                        : updatedMsg.receiverEmail;
 
-    //         // Cập nhật giao diện: thêm tin nhắn mới nếu muốn
-    //         if (
-    //             (targetGroupId && selectedUser?.type === 'group' && selectedUser.groupId === targetGroupId) ||
-    //             (targetEmail && selectedUser?.type === 'friend' && selectedUser.email === targetEmail)
-    //         ) {
-    //             setChatMessages((prev) => [...prev, forwardedMsg]);
-    //         }
+                socket.emit("messageRecalled", {
+                    messageId,
+                    receiverEmail,
+                    senderEmail: user.email,
+                });
+            }
 
-    //         if (response.data.success) {
-                
-    //             setGroupMembers(response.data.data); // cập nhật lại group
-    //             setAllowMemberInvite(response.data.data.allowMemberInvite);
-    //             notification.success({
-    //                 message: "Chuyển tiếp tin nhắn thành công!",
-    //             });
-    //         }
-    //         setShowForwardModal(false);
-    //     } catch (error: any) {
-    //         console.error("Lỗi khi chuyển tiếp tin nhắn:", error.response?.data || error.message);
-    //         notification.error({
-    //             message: "Không chuyển tiếp tin nhắn được!",
-    //         });
-    //     } 
-    // };
+        } catch (err: any) {
+            console.error('Lỗi khi thu hồi tin nhắn:', err.response?.data || err.message);
+        }
+    };
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleMessageRecalled = ({ messageId, senderEmail }: any) => {
+            console.log("📩 Nhận sự kiện thu hồi cá nhân:", messageId);
+            setChatMessages(prev =>
+                prev.map(msg =>
+                    msg.messageId === messageId
+                        ? { ...msg, content: "Tin nhắn đã được thu hồi" }
+                        : msg
+                )
+            );
+
+            const key = senderEmail; // hoặc tùy chỉnh nếu cần groupId
+            updateLastMessage(key, "Tin nhắn đã được thu hồi", new Date(), senderEmail);
+        };
+
+        const handleGroupMessageRecalled = ({ groupId, messageId, senderEmail }: any) => {
+            console.log("📩 Nhận sự kiện thu hồi nhóm:", messageId);
+            setChatMessages(prev =>
+                prev.map(msg =>
+                    msg.messageId === messageId
+                        ? { ...msg, content: "Tin nhắn đã được thu hồi" }
+                        : msg
+                )
+            );
+
+            updateLastMessage(groupId, "Tin nhắn đã được thu hồi", new Date(), senderEmail);
+        };
+
+        socket.on("messageRecalled", handleMessageRecalled);
+        socket.on("recallGroupMessage", handleGroupMessageRecalled);
+
+        return () => {
+            socket.off("messageRecalled", handleMessageRecalled);
+            socket.off("recallGroupMessage", handleGroupMessageRecalled);
+        };
+    }, [socket]);
+
 
     const handleForwardMessages = async (
         selectedMsg: BaseMessage, // truyền cả object để dễ xác định type
@@ -1081,7 +1060,18 @@ const Home = () => {
                         }
                     );
                     const messages = response.data.data.messages;
-                    setChatMessages(messages);
+
+                     const filteredMessages = messages.filter(msg => {
+                        if (!msg.deletedFor) return true;
+                        return !msg.deletedFor.includes(myEmail);
+                    });
+
+                    setChatMessages(filteredMessages);
+
+                    if (filteredMessages.length > 0) {
+                        const lastMsg = filteredMessages[filteredMessages.length - 1];
+                        updateLastMessage(selectedUser.groupId, lastMsg.content, new Date(lastMsg.createdAt), lastMsg.senderEmail);
+                    }
                 } else if (selectedUser.type === 'friend') {
                     // CHAT ĐƠN
                     const response = await axios.get<GetMessagesResponse>(
@@ -1091,7 +1081,13 @@ const Home = () => {
                         }
                     );
                     const messages = response.data.data;
-                    setChatMessages(messages);
+                    const filteredMessages = messages.filter(msg => {
+                    if (!msg.deletedBy) return true;
+                        return !msg.deletedBy.includes(myEmail);
+                    });
+
+                    setChatMessages(filteredMessages);
+                    // setChatMessages(messages);
     
                     if (messages.length > 0) {
                         const lastMsg = messages[messages.length - 1];
@@ -1316,70 +1312,6 @@ const Home = () => {
     };
 
     
-      
-    // const handleRecallMessage = async (messageId?: string) => {
-    //     const token = localStorage.getItem('token');
-    //     if (!messageId) {
-    //         console.warn("messageId bị thiếu khi recall");
-    //         return;
-    //     }
-    //     // console.log("==> recall msg ID:", messageId);
-    //     try {
-    //         const response = await axios.put(`${API_ENDPOINTS.recall(messageId)}`, null, {
-    //             headers: {
-    //                 Authorization: `Bearer ${token}`
-    //             }
-    //         });
-    //         const updatedMsg = (response.data as { data: Message }).data;
-
-    //         setChatMessages((prevMessages) =>
-    //         prevMessages.map((msg) =>
-    //             msg.messageId === updatedMsg.messageId ? updatedMsg : msg
-    //         )
-    //         );
-    //         // console.log("==> Recall response", response.data);
-    //     } catch (err: any) {
-    //         console.error('Lỗi khi thu hồi tin nhắn:', err.response?.data || err.message);
-    //     }
-    // };
-
-    const handleRecallMessage = async (
-        messageId?: string,
-        groupId?: string,
-        isGroup: boolean = false
-    ) => {
-        const token = localStorage.getItem('token');
-        if (!messageId) {
-            console.warn("messageId bị thiếu khi recall");
-            return;
-        }
-
-        try {
-            const url = isGroup
-                ? API_ENDPOINTS.recallGroupMessage(groupId!, messageId)
-                : API_ENDPOINTS.recall(messageId);
-
-            const response = await axios.put(url, null, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-
-            const updatedMsg = (response.data as { data: Message }).data;
-
-            setChatMessages((prevMessages) =>
-                prevMessages.map((msg) =>
-                    msg.messageId === updatedMsg.messageId ? updatedMsg : msg
-                )
-            );
-        } catch (err: any) {
-            console.error('Lỗi khi thu hồi tin nhắn:', err.response?.data || err.message);
-        }
-    };
-
-    
-    
-    
 
     // 2 phút là không thu hồi
     const canRecallMessage = (createdAt: string) => {
@@ -1389,30 +1321,6 @@ const Home = () => {
         return now - msgTime <= twoMinutes;
     };
 
-    // const handleAddReaction = async (messageId: string, emoji: string) => {
-    //     try {
-    //         const res = await fetch('/api/reactions/add', {
-    //             method: 'POST',
-    //             headers: {
-    //                 'Content-Type': 'application/json',
-    //                 Authorization: `Bearer ${localStorage.getItem('token')}`, // nếu bạn dùng auth token
-    //             },
-    //             body: JSON.stringify({ messageId, reaction: emoji }),
-    //         });
-    
-    //         const data = await res.json();
-    //         if (data.success) {
-    //             // Cập nhật danh sách tin nhắn (tùy bạn xử lý như thế nào)
-    //             // Ví dụ: gọi lại API get messages, hoặc cập nhật react local state
-    //             console.log('Reaction added!');
-    //         } else {
-    //             console.error(data.error);
-    //         }
-    //     } catch (err) {
-    //         console.error('Error sending reaction:', err);
-    //     }
-    // };
-    // console.log("GROUP ID: ", friend.groupId);
     const fetchGroupMembers = async () => {
         try {
           const token = localStorage.getItem('token');
@@ -1502,16 +1410,29 @@ const Home = () => {
     };
 
     // Xóa tin nhắn
-    const handleDeleteMessage = async (messageId?: string) => {
+    const handleDeleteMessage = async (groupId?: string | null, messageId?: string) => {
         const token = localStorage.getItem('token');
         
         if (!messageId) return;
         try {
-          await axios.delete(`${API_ENDPOINTS.deleteMessage(messageId)}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
+            let url = '';
+            if (groupId) {
+            // Xóa tin nhắn nhóm
+                url = `${API_ENDPOINTS.deleteMessageGroup(groupId, messageId)}`;
+            } else {
+            // Xóa tin nhắn đơn
+                url = `${API_ENDPOINTS.deleteMessage(messageId)}`;
             }
-          });
+
+            await axios.delete(url, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+        setChatMessages(prev => prev.filter(m => m.messageId !== messageId));
+        notification.success({
+            message: 'Xóa tin nhắn thành công!',
+        });
         } catch (err) {
           console.error('Lỗi khi xóa tin nhắn:', err);
         }
@@ -2306,7 +2227,7 @@ const Home = () => {
                                             msg.content
                                         )}
 
-                                        {hoveredMsgId === msg.messageId && (
+                                        {hoveredMsgId === msg.messageId && !msg.isRecalled  &&  (
                                             <div className="reaction-box" style={{ display: 'flex', gap: '4px', marginTop: 4 }}>
                                                 {reactionsList.map((icon) => (
                                                     <span
@@ -2328,7 +2249,7 @@ const Home = () => {
                                                 ))}
                                             </div>
                                         )} */}
-                                        {msg.reactions && msg.reactions.length > 0 && (
+                                        {msg.reactions && msg.reactions.length > 0 && !msg.isRecalled && (
                                             <div
                                                 style={{
                                                 fontSize: '14px',
@@ -2361,7 +2282,7 @@ const Home = () => {
                                                 })}
                                             </div>
                                         )}
-                                        {hoveredMsgId === msg.messageId && (
+                                        {hoveredMsgId === msg.messageId && !msg.isRecalled && (
                                             <div
                                                 className="message-options"
                                                 ref={moreButtonRef}
@@ -2401,7 +2322,7 @@ const Home = () => {
                                                 <div
                                                     className="message-option"
                                                     style={{ padding: '8px', cursor: 'pointer' }}
-                                                    onClick={() => handleDeleteMessage(msg.messageId)}
+                                                    onClick={() => handleDeleteMessage(groupId || null, msg.messageId )}
                                                 >
                                                     Xóa chỉ ở phía tôi
                                                 </div>
@@ -2427,43 +2348,8 @@ const Home = () => {
                                                 </div>
                                             </div>
                                         )}
-
-                                            {/* <Modal
-                                                open={showModal}
-                                                onCancel={() => setShowModal(false)}
-                                                footer={null}
-                                                title="Tùy chọn tin nhắn"
-                                            >
-                                                <Button
-                                                    type="primary"
-                                                    danger
-                                                    onClick={() => {
-                                                        handleDeleteMessage(selectedMsg?.messageId);
-                                                        setShowModal(false);
-                                                    }}
-                                                    style={{ marginBottom: 10 }}
-                                                    block
-                                                >
-                                                    Xóa tin nhắn
-                                                </Button>
-
-                                               
-                                                {selectedMsg && canRecallMessage(selectedMsg.createdAt) && (
-                                                    <Button
-                                                    onClick={() => {
-                                                        handleRecallMessage(selectedMsg?.messageId, groupId); // truyền groupId nếu có
-                                                        setShowModal(false);
-                                                    }}
-                                                        block
-                                                    >
-                                                        Thu hồi tin nhắn
-                                                    </Button>
-                                                )}
-                                            </Modal> */}
-
-                                            
                                     </div>
-                                    {isOwnMessage && !msg.groupId && (
+                                    {isOwnMessage && !msg.groupId && !msg.isRecalled  && (
                                         <div style={{ fontSize: '11px', color: msg.status === 'read' ? '#151515' : '#a6a6a6' }}>
                                             {msg.status === 'read' ? 'Đã xem' : 'Đã gửi'}
                                         </div>

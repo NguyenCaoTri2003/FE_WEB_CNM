@@ -96,13 +96,11 @@ const AppRoutes = () => {
             <PrivateRoute>
                 <Profile />
             </PrivateRoute>} />
-        {/* </Route> */}
-        <Route path="setting" element={<SettingLayout />} >
-            <Route path="update-password" element={
-                <PrivateRoute>
-                    <UpdatePassword />
-                </PrivateRoute>} />
-        </Route>
+          <Route path="update-password" element={
+              <PrivateRoute>
+                  <UpdatePassword />
+              </PrivateRoute>} />
+        
       </Route>
       <Route index element={<Login />} />
         <Route path="login" element={<Login />} />
