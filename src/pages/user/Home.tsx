@@ -13,7 +13,8 @@ import { API_ENDPOINTS } from "config/api";
 import { Button, Input, Modal, notification, Select } from "antd";
 import 'antd/dist/reset.css';
 import { useMessageContext } from "../../context/MessagesContext";
-import { useUnreadMessages } from '../../context/UnreadMessagesContext'; 
+import { useUnreadMessages } from '../../context/UnreadMessagesContext';
+import { useGlobalContext } from '../../context/GlobalContext'; 
 import { useGroupContext } from "../../context/GroupContext";
 import socket from "../../routes/socket";
 import EmojiPicker from 'emoji-picker-react';
@@ -276,6 +277,8 @@ const Home = () => {
 
     const [showForwardModal, setShowForwardModal] = useState(false);
     const [forwardTarget, setForwardTarget] = useState('');
+
+    const { refreshChat, setRefreshChat } = useGlobalContext();
 
     const reactionsList = ['👍', '❤️', '😂', '😮', '😢', '👎'];
 
@@ -849,6 +852,51 @@ const Home = () => {
         };
     }, [socket]);
 
+    // Xóa tin nhắn
+    const handleDeleteMessage = async (groupId?: string | null, messageId?: string, isGroup: boolean = false) => {
+        const token = localStorage.getItem('token');
+        
+        if (!messageId) return;
+        try {
+            const url = isGroup
+                ? API_ENDPOINTS.deleteMessageGroup(groupId!, messageId)
+                : API_ENDPOINTS.deleteMessage(messageId);
+
+
+        await axios.delete(url, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        // Lấy tin nhắn cuối trước khi xóa
+        const lastMessage = chatMessages[chatMessages.length - 1];
+
+        // Cập nhật state: xóa tin nhắn
+        setChatMessages(prev => prev.filter(m => m.messageId !== messageId));
+
+        // Nếu tin nhắn bị xóa là tin nhắn cuối, cập nhật last message
+        if (lastMessage?.messageId === messageId) {
+            const key = isGroup ? groupId! : selectedUser?.email;
+            const messBeforeLast = chatMessages[chatMessages.length - 2];
+
+            let lastContent = 'Chưa có tin nhắn nào';
+            if (messBeforeLast) {
+                lastContent = messBeforeLast.isRecalled
+                    ? 'Tin nhắn đã thu hồi'
+                    : messBeforeLast.content || 'Chưa có tin nhắn nào';
+            }
+
+            updateLastMessage(key, lastContent, new Date(), user.email);
+        }
+
+        notification.success({
+            message: 'Xóa tin nhắn thành công!',
+        });
+        } catch (err) {
+          console.error('Lỗi khi xóa tin nhắn:', err);
+        }
+    };
+
 
     const handleForwardMessages = async (
         selectedMsg: BaseMessage, // truyền cả object để dễ xác định type
@@ -1041,68 +1089,75 @@ const Home = () => {
         };
     }, [socket, updateLastMessage, currentUserEmail]);
     
-    //tải tin nhắn
-    useEffect(() => {
+    const fetchMessages = async () => {
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem("user") || "{}");
         const myEmail = user.email;
-    
-        const fetchMessages = async () => {
-            try {
-                if (!selectedUser) return;
-    
-                if (selectedUser.type === 'group') {
-                    // CHAT NHÓM
-                    const response = await axios.get<GetGroupMessagesResponse>(
-                        `${API_ENDPOINTS.getMessagesGroup(selectedUser.groupId)}`,
-                        {
-                            headers: { Authorization: `Bearer ${token}` },
-                        }
-                    );
-                    const messages = response.data.data.messages;
+        
+        try {
+            if (!selectedUser) return;
 
-                     const filteredMessages = messages.filter(msg => {
-                        if (!msg.deletedFor) return true;
-                        return !msg.deletedFor.includes(myEmail);
-                    });
-
-                    setChatMessages(filteredMessages);
-
-                    if (filteredMessages.length > 0) {
-                        const lastMsg = filteredMessages[filteredMessages.length - 1];
-                        updateLastMessage(selectedUser.groupId, lastMsg.content, new Date(lastMsg.createdAt), lastMsg.senderEmail);
+            if (selectedUser.type === 'group') {
+                // CHAT NHÓM
+                const response = await axios.get<GetGroupMessagesResponse>(
+                    `${API_ENDPOINTS.getMessagesGroup(selectedUser.groupId)}`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
                     }
-                } else if (selectedUser.type === 'friend') {
-                    // CHAT ĐƠN
-                    const response = await axios.get<GetMessagesResponse>(
-                        `${API_ENDPOINTS.getMessages}${selectedUser.email}`,
-                        {
-                            headers: { Authorization: `Bearer ${token}` },
-                        }
-                    );
-                    const messages = response.data.data;
+                );
+                const messages = response.data.data.messages;
+
                     const filteredMessages = messages.filter(msg => {
-                    if (!msg.deletedBy) return true;
-                        return !msg.deletedBy.includes(myEmail);
-                    });
+                    if (!msg.deletedFor) return true;
+                    return !msg.deletedFor.includes(myEmail);
+                });
 
-                    setChatMessages(filteredMessages);
-                    // setChatMessages(messages);
-    
-                    if (messages.length > 0) {
-                        const lastMsg = messages[messages.length - 1];
-                        const isReceiver = lastMsg.senderEmail !== myEmail;
-                        const friendEmail = isReceiver ? lastMsg.senderEmail : lastMsg.receiverEmail;
-                        updateLastMessage(friendEmail, lastMsg.content, new Date(lastMsg.createdAt), lastMsg.senderEmail);
-                    }
+                setChatMessages(filteredMessages);
+
+                if (filteredMessages.length > 0) {
+                    const lastMsg = filteredMessages[filteredMessages.length - 1];
+                    updateLastMessage(selectedUser.groupId, lastMsg.content, new Date(lastMsg.createdAt), lastMsg.senderEmail);
                 }
-            } catch (error) {
-                console.error("Lỗi khi tải tin nhắn:", error);
+            } else if (selectedUser.type === 'friend') {
+                // CHAT ĐƠN
+                const response = await axios.get<GetMessagesResponse>(
+                    `${API_ENDPOINTS.getMessages}${selectedUser.email}`,
+                    {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }
+                );
+                const messages = response.data.data;
+                const filteredMessages = messages.filter(msg => {
+                if (!msg.deletedBy) return true;
+                    return !msg.deletedBy.includes(myEmail);
+                });
+
+                setChatMessages(filteredMessages);
+                // setChatMessages(messages);
+
+                // if (filteredMessages.length > 0) {
+                //     const lastMsg = filteredMessages[filteredMessages.length - 1];
+                //     const isReceiver = lastMsg.senderEmail !== myEmail;
+                //     const friendEmail = isReceiver ? lastMsg.senderEmail : lastMsg.receiverEmail;
+                //     updateLastMessage(friendEmail, lastMsg.content, new Date(lastMsg.createdAt), lastMsg.senderEmail);
+                //     console.log("cua lastMsg: ", friendEmail)
+                // }
             }
-        };
+        } catch (error) {
+            console.error("Lỗi khi tải tin nhắn:", error);
+        }
+    };
+    //tải tin nhắn
+    useEffect(() => {
+        
+        if(refreshChat || selectedUser) {
+            fetchMessages();
+            setRefreshChat(false);
+        }
+        
     
-        fetchMessages();
-    }, [selectedUser]);
+        // fetchMessages();
+    }, [selectedUser, refreshChat, setRefreshChat]);
     
     
 
@@ -1132,61 +1187,6 @@ const Home = () => {
         }
     }
 
-    // const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    //     const token = localStorage.getItem('token');
-    //     const file = e.target.files?.[0];
-    //     if (!file) return;
-    
-    //     const formData = new FormData();
-    //     formData.append('file', file);
-    
-    //     try {
-    //         const response = await fetch(API_ENDPOINTS.uploadFile, {
-    //             method: 'POST',
-    //             headers: {
-    //                 Authorization: `Bearer ${token}`,
-    //             },
-    //             body: formData
-    //         });
-    
-    //         const result = await response.json();
-    
-    //         if (result.success) {
-    //             console.log('Tải lên thành công:', result.data);
-    
-                
-
-    //             if (selectedUser.type === 'group') {
-    //                 // CHAT NHÓM
-    //                 const response = await axios.post<SendGroupMessageResponse>(
-    //                     `${API_ENDPOINTS.sendMessageGroup(selectedUser.groupId)}`,
-    //                     {
-    //                         content: result.data.url,
-    //                         type: 'file',
-    //                     },
-    //                     {
-    //                         headers: { Authorization: `Bearer ${token}` }
-    //                     }
-    //                 );
-    //             } else if (selectedUser.type === 'friend') {
-    //                 // Gửi tin nhắn chứa đường dẫn file
-    //                 await axios.post(API_ENDPOINTS.sendMessage, {
-    //                     receiverEmail: selectedUser.email,
-    //                     content: result.data.url,
-    //                     type: "file"
-    //                 }, {
-    //                     headers: { Authorization: `Bearer ${token}` }
-    //                 });
-    //             }
-
-    
-    //         } else {
-    //             console.error('Lỗi upload:', result.message);
-    //         }
-    //     } catch (error) {
-    //         console.error('Upload failed:', error);
-    //     }
-    // };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const token = localStorage.getItem('token');
@@ -1409,34 +1409,7 @@ const Home = () => {
         }
     };
 
-    // Xóa tin nhắn
-    const handleDeleteMessage = async (groupId?: string | null, messageId?: string) => {
-        const token = localStorage.getItem('token');
-        
-        if (!messageId) return;
-        try {
-            let url = '';
-            if (groupId) {
-            // Xóa tin nhắn nhóm
-                url = `${API_ENDPOINTS.deleteMessageGroup(groupId, messageId)}`;
-            } else {
-            // Xóa tin nhắn đơn
-                url = `${API_ENDPOINTS.deleteMessage(messageId)}`;
-            }
-
-            await axios.delete(url, {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-        setChatMessages(prev => prev.filter(m => m.messageId !== messageId));
-        notification.success({
-            message: 'Xóa tin nhắn thành công!',
-        });
-        } catch (err) {
-          console.error('Lỗi khi xóa tin nhắn:', err);
-        }
-    };
+    
 
     const handleRemoveMember = async (groupId?: string, memberId?: string) => {
         setLoading(true);
@@ -2322,7 +2295,7 @@ const Home = () => {
                                                 <div
                                                     className="message-option"
                                                     style={{ padding: '8px', cursor: 'pointer' }}
-                                                    onClick={() => handleDeleteMessage(groupId || null, msg.messageId )}
+                                                    onClick={() => handleDeleteMessage(groupId || null, msg.messageId, selectedUser.type === 'group' )}
                                                 >
                                                     Xóa chỉ ở phía tôi
                                                 </div>

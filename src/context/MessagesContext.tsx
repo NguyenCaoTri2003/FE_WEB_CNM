@@ -11,17 +11,13 @@ type LastMessageData = {
 type MessageContextType = {
   lastMessages: Record<string, LastMessageData>;
   updateLastMessage: (id: string, message: string, time: Date, senderEmail: string) => void;
+  removeLastMessage: (id: string) => void;
 };
 
 const MessageContext = createContext<MessageContextType | null>(null);
 
 export const MessagesContext = ({ children }: { children: React.ReactNode }) => {
-  // const [lastMessages, setLastMessages] = useState<Record<string, LastMessageData>>(() => {
-  //   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  //   const currentUserEmail = user.email;
-  //   const stored = localStorage.getItem(`lastMessages_${currentUserEmail}`);
-  //   return stored ? JSON.parse(stored) : {};
-  // });
+
 
   const [lastMessages, setLastMessages] = useState<Record<string, LastMessageData>>({});
   
@@ -54,13 +50,25 @@ export const MessagesContext = ({ children }: { children: React.ReactNode }) => 
       
   };
 
+  const removeLastMessage = (id: string) => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const currentUserEmail = user.email;
+    const key = `lastMessages_${currentUserEmail}`;
+
+    const existing = JSON.parse(localStorage.getItem(key) || "{}");
+    delete existing[id];
+
+    localStorage.setItem(key, JSON.stringify(existing));
+    setLastMessages(existing); // Cập nhật lại context
+  };
+
   useEffect(() => {
     console.log("✅ Last messages đã cập nhật: ", lastMessages);
   }, [lastMessages]);
   
   
   return (
-    <MessageContext.Provider value={{ lastMessages, updateLastMessage }}>
+    <MessageContext.Provider value={{ lastMessages, updateLastMessage, removeLastMessage }}>
       {children}
     </MessageContext.Provider>
   );

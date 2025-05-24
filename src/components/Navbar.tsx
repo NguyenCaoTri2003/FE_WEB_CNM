@@ -10,8 +10,11 @@ import { useNavigate } from "react-router-dom";
 import Modal from "react-modal";
 import { useMessageContext } from "../context/MessagesContext";
 import { useUnreadMessages } from '../context/UnreadMessagesContext';
+import { useGlobalContext } from '../context/GlobalContext';
 import { useGroupContext } from '../context/GroupContext';
 import socket from 'routes/socket';
+import { notification} from "antd";
+import 'antd/dist/reset.css';
 
 // Định nghĩa interface cho dữ liệu user
 interface UserProfile {
@@ -142,7 +145,7 @@ const Navbar = () => {
     //const [groups, setGroups] = useState<Group[]>([]); 
     const { groups, fetchGroups, setGroups } = useGroupContext(); 
 
-    const { lastMessages, updateLastMessage } = useMessageContext()!;
+    const { lastMessages, updateLastMessage, removeLastMessage  } = useMessageContext()!;
     // const displayLastMessageTime = lastMessageTime ? lastMessageTime.toString().slice(0, 10) : 'Chưa có tin nhắn';
     const [storedMessage, setStoredMessage] = useState<{ message: string, time: Date } | null>(null);
 
@@ -162,7 +165,7 @@ const Navbar = () => {
 
     const { unreadMessages, removeUnreadMessage, isInitialized  } = useUnreadMessages();
 
-
+    const { setRefreshChat } = useGlobalContext();
 
     
 
@@ -508,6 +511,8 @@ const Navbar = () => {
     const unfriend = async (friendEmail: string) => {
       try {
           const token = localStorage.getItem("token");
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const myEmail = user.email;
           if (!token) {
               console.error("Token không tồn tại, người dùng chưa đăng nhập");
               return;
@@ -528,7 +533,8 @@ const Navbar = () => {
   
               // Xóa người bạn đó khỏi danh sách friends
               setFriends(prevFriends => prevFriends.filter(friend => friend.email !== friendEmail));
-  
+              removeLastMessage(friendEmail);
+              setRefreshChat(true); // Cập nhật lại trạng thái chat
               // Nếu người đang xem (selectedUserSearch) vừa bị hủy, thì cập nhật luôn trạng thái
               if (selectedUserSearch?.email === friendEmail) {
                 fetchFriends();
@@ -563,6 +569,8 @@ const Navbar = () => {
           if (response.data.success) {
             if (accept) {
               console.log("Đã chấp nhận lời mời kết bạn");
+              removeLastMessage(senderEmail); 
+              setRefreshChat(true);
               // Cập nhật trạng thái cho người B khi đã chấp nhận lời mời
               if (currentUserEmail === senderEmail) {
                 setHasSentRequest(true);  // Người A đã gửi lời mời
@@ -842,6 +850,70 @@ const Navbar = () => {
     fetchSenderNames();
   }, [combinedList]);
 
+  // const handleClearMessagesForMe = async () => {
+  //     const token = localStorage.getItem("token");
+  //     const conversationId = selectedItem.type === "friend"
+  //         ? [currentUserEmail, selectedItem.email].sort().join("-")
+  //         : selectedItem.groupId;
+
+  //     try {
+  //         await axios.delete(`${API_ENDPOINTS.hideMessage(conversationId)}`, {
+  //             headers: {
+  //                 Authorization: `Bearer ${token}`
+  //             }
+  //         });
+
+  //         notification.success({
+  //             message: "Xóa tin nhắn thành công",
+  //         });
+  //         setCombinedLists(prev => prev.filter(item => item !== selectedItem));
+  //         setSelectedItem(null);
+  //         updateLastMessage(conversationId, "", new Date, "");
+  //         setIsModalOpen(false);
+  //     } catch (err) {
+  //         console.error("Lỗi khi xóa:", err);
+  //     }
+  // };
+
+    const handleClearMessagesForMe = async () => {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const myEmail = user.email;
+
+      try {
+          if (selectedItem.type === "friend") {
+              // Tin nhắn 1-1: gọi endpoint khác
+              await axios.delete(`${API_ENDPOINTS.hideMessage(selectedItem.email)}`, {
+                  headers: {
+                      Authorization: `Bearer ${token}`
+                  }
+              });
+              updateLastMessage(selectedItem.email, "", new Date, myEmail);
+        } 
+          else {
+              // Tin nhắn nhóm
+              await axios.delete(`${API_ENDPOINTS.hideMessageGroup(selectedItem.groupId)}`, {
+                  headers: {
+                      Authorization: `Bearer ${token}`
+                  }
+              });
+              updateLastMessage(selectedItem.groupId, "", new Date, myEmail);
+          }
+
+          notification.success({
+              message: "Xóa tin nhắn thành công",
+          });
+          setCombinedLists(prev => prev.filter(item => item !== selectedItem));
+          setSelectedItem(null);
+
+          
+          setIsModalOpen(false);
+      } catch (error) {
+          console.error("Lỗi khi ẩn tin nhắn:", error);
+      }
+    };
+
+
   if (!isInitialized) return null;
   
     
@@ -871,12 +943,23 @@ const Navbar = () => {
                     setActiveTab("showHome")
                     fetchFriends();
                     fetchGroups();
+                    setIsSearching(false);
+                    setSearchTerm('');
+                    setSearchedUsers([]);
+                    setNotFound(false);
                   }}
                 />
               </div>
             </Link>
               <div className={`icon-contact ${activeTab === "showContacts" ? "activeTab" : ""}`}>
-                <FontAwesomeIcon icon={faContactBook} onClick={() =>  setActiveTab("showContacts")}/>
+                <FontAwesomeIcon icon={faContactBook} 
+                  onClick={() =>  {
+                    setActiveTab("showContacts")
+                    setIsSearching(false);
+                    setSearchTerm('');
+                    setSearchedUsers([]);
+                    setNotFound(false);
+                  }}/>
               </div>
           </div>
         </div>
@@ -1140,7 +1223,7 @@ const Navbar = () => {
                                         <div className="message-content">
                                             <div className="message-header">
                                                 <span className="message-name">{item.type === "friend" ? item.fullName : item.name}</span>
-                                                <span 
+                                                {/* <span 
                                                     className="message-time" 
                                                     onClick={(e) => {
                                                         if (item.type === "friend"){
@@ -1165,6 +1248,44 @@ const Navbar = () => {
                                                     hoveredMessageType === item.type
                                                       ? <MoreOutlined />
                                                       : displayTime}
+                                                </span> */}
+                                                <span
+                                                  className="message-time"
+                                                  onMouseEnter={() => {
+                                                    setHoveredMessageId(item.type === "friend" ? item.userId : item.groupId);
+                                                    setHoveredMessageType(item.type);
+                                                  }}
+                                                  onMouseLeave={() => {
+                                                    setHoveredMessageId(null);
+                                                    setHoveredMessageType(null);
+                                                  }}
+                                                  onClick={(e) => {
+                                                    if (item.type === "friend") {
+                                                      setSelectedUser(item);
+                                                    } else {
+                                                      setSelectedGroup(item);
+                                                    }
+                                                    setIsModalOpen(true);
+
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    const windowHeight = window.innerHeight;
+                                                    const modalHeight = 100;
+                                                    const topPosition = (rect.bottom + modalHeight > windowHeight - 200)
+                                                      ? rect.top - modalHeight - 10
+                                                      : rect.bottom + 5;
+
+                                                    setModalPosition({
+                                                      top: topPosition,
+                                                      left: rect.left,
+                                                    });
+                                                  }}
+                                                >
+                                                  {hoveredMessageId === (item.type === "friend" ? item.userId : item.groupId) &&
+                                                  hoveredMessageType === item.type ? (
+                                                    <MoreOutlined />
+                                                  ) : (
+                                                    displayTime
+                                                  )}
                                                 </span>
                                             </div>
                                             <div key={id} className={`message-text ${unreadMessages.has(id) ? 'unread' : ''}`}>
@@ -1179,7 +1300,7 @@ const Navbar = () => {
                             <Modal
                                 isOpen={isModalOpen}
                                 onRequestClose={() => setIsModalOpen(false)}
-                                className="custom-modal"
+                                className="custom-modal-message"
                                 overlayClassName="overlay"
                                 style={{
                                     content: {
@@ -1195,9 +1316,8 @@ const Navbar = () => {
                                     }
                                 }}
                             >
-                                <h3>Tùy chọn tin nhắn</h3>
-                                <button onClick={() => console.log("Sao chép")}>Sao chép tin nhắn</button>
-                                <button onClick={() => console.log("Xóa")}>Xóa tin nhắn</button>
+                                <p>Tùy chọn tin nhắn</p>
+                                <button onClick={handleClearMessagesForMe}>Xóa tin nhắn</button>
                                 <button onClick={() => console.log("Báo cáo")}>Báo cáo tin nhắn</button>
                                 <button onClick={() => setIsModalOpen(false)}>Đóng</button>
                             </Modal>

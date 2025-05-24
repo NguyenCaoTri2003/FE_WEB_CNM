@@ -638,3 +638,27 @@
   font-size: 12px;
   margin-left: 5px;
 }
+.custom-modal-message p{
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    margin: 0;
+}
+.custom-modal-message button {
+    border: none;
+    background-color: #ffffff;
+    width: 100%;
+    padding: 5px 0px;
+    font-size: 14px;
+}
+.custom-modal-message button:hover{
+    background-color: #e5e7eb;
+    cursor: pointer;
+}
+.custom-modal-message{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
