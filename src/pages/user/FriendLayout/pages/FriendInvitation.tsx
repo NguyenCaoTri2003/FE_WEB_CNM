@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { UserAddOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "config/api";
+import socket from "routes/socket";
 
 // interface FriendRequest {
 //     senderEmail: string;
@@ -124,6 +125,37 @@ const FriendInvitation: React.FC = () => {
             alert("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
         }
     };
+
+    useEffect(() => {
+      const handleNewFriendRequest = (data: any) => {
+        if (data.type === "newRequest") {
+          console.log("Nhận được lời mời kết bạn từ:", data.sender.fullName);
+          setFriendRequests(prev => [
+            ...prev,
+            {
+              email: data.sender.email,
+              fullName: data.sender.fullName,
+              avatar: data.sender.avatar,
+            },
+          ]);
+        }
+      };
+
+      const handleFriendListUpdate = (data: any) => {
+        if (data.type === "unfriend") {
+          console.log("Bị hủy kết bạn với:", data.email);
+          setFriendRequests(prev => prev.filter(friend => friend.email !== data.email));
+        }
+      };
+
+      socket.on("friendRequestUpdate", handleNewFriendRequest);
+      socket.on("friendListUpdate", handleFriendListUpdate);
+
+      return () => {
+        socket.off("friendRequestUpdate", handleNewFriendRequest);
+        socket.off("friendListUpdate", handleFriendListUpdate);
+      };
+    }, []);
 
     if (loading) {
       return (

@@ -3,6 +3,7 @@ import { Search, ChevronDown, MoreHorizontal } from "lucide-react";
 import "../../../../assets/styles/FriendList.css";
 import { API_ENDPOINTS } from "config/api";
 import axios from "axios";
+import socket from "routes/socket";
 
 interface Friend {
   email: string;
@@ -26,36 +27,50 @@ const FriendList = () => {
   const [activeFriend, setActiveFriend] = useState<string | null>(null); // Track active friend email
   const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null); // Track popup position
 
+  const fetchFriends = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("Người dùng chưa đăng nhập hoặc token không hợp lệ");
+        return;
+      }
+
+      const response = await axios.get<FriendResponse>(`${API_ENDPOINTS.getFriends}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.success) {
+        setFriends(response.data.data);
+      } else {
+        console.error("Lỗi khi lấy danh sách bạn bè");
+      }
+    } catch (error) {
+      console.error("Lỗi khi gọi API:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   // Fetch friend list from API
   useEffect(() => {
-    const fetchFriends = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          console.error("Người dùng chưa đăng nhập hoặc token không hợp lệ");
-          return;
-        }
+    fetchFriends();
 
-        const response = await axios.get<FriendResponse>(`${API_ENDPOINTS.getFriends}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.data.success) {
-          setFriends(response.data.data);
-        } else {
-          console.error("Lỗi khi lấy danh sách bạn bè");
-        }
-      } catch (error) {
-        console.error("Lỗi khi gọi API:", error);
-      } finally {
-        setLoading(false);
+    // Nghe socket khi có cập nhật bạn bè (kết bạn / hủy bạn)
+    const handleFriendUpdate = (data: any) => {
+      if (data.type === "newFriend" || data.type === "unfriend") {
+        fetchFriends();
       }
     };
 
-    fetchFriends();
+    socket.on("friendListUpdate", handleFriendUpdate);
+
+    return () => {
+      socket.off("friendListUpdate", handleFriendUpdate);
+    };
   }, []);
+
+
 
   const toggleFriendInfo = (email: string, event: React.MouseEvent<HTMLButtonElement>) => {
     const rect = event.currentTarget.getBoundingClientRect(); // Get button position

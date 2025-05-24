@@ -478,6 +478,12 @@ const Navbar = () => {
         if (response.data.success) {
           console.log("Đã gửi lời mời kết bạn");
           setHasSentRequest(true);
+
+          socket.emit("friendRequestSent", {
+            senderEmail: currentUserEmail,
+            receiverEmail: receiverEmail,
+          });
+
           if (currentUserEmail == receiverEmail) {
             setHasIncomingRequest(true);  // Người nhận lời mời 
           }
@@ -499,6 +505,10 @@ const Navbar = () => {
           if (response.data.success) {
             console.log("Đã thu hồi lời mời");
             setHasSentRequest(false);
+            socket.emit("withdrawFriendRequest", {
+              senderEmail: currentUserEmail,
+              receiverEmail,
+            });
           } else {
             console.log(response.data.message);
           }
@@ -507,6 +517,30 @@ const Navbar = () => {
           console.log("Lỗi khi thu hồi lời mời");
         }
     };
+
+    useEffect(() => {
+      // Lắng nghe sự kiện khi có lời mời kết bạn mới
+      socket.on("friendRequestSent", (data: any) => {
+        console.log("Có lời mời kết bạn mới:", data);
+        setHasIncomingRequest(true);
+      });
+
+      // Lắng nghe sự kiện khi có lời mời bị thu hồi
+      socket.on("friendRequestWithdrawn", (data: any) => {
+        console.log("Lời mời kết bạn bị thu hồi:", data);
+        setHasIncomingRequest(false);
+      });
+      socket.on("friendRequestAccepted", (data: any) => {
+        console.log("Lời mời kết bạn đã được chấp nhận:", data);
+        fetchFriends();
+      });
+
+      return () => {
+        socket.off("friendRequestSent");
+        socket.off("friendRequestWithdrawn");
+        socket.off("friendRequestAccepted");
+      };
+    }, []);
 
     const unfriend = async (friendEmail: string) => {
       try {
@@ -540,6 +574,9 @@ const Navbar = () => {
                 fetchFriends();
                 setHasSentRequest(false); // Cẩn thận reset luôn trạng thái lời mời
               }
+              socket.emit("unfriend", {
+                targetEmail: friendEmail,
+              });
           } else {
               console.error(response.data.message);
           }
@@ -569,6 +606,11 @@ const Navbar = () => {
           if (response.data.success) {
             if (accept) {
               console.log("Đã chấp nhận lời mời kết bạn");
+
+              socket.emit('friendRequestAccepted', {
+                email: senderEmail,
+              });
+
               removeLastMessage(senderEmail); 
               setRefreshChat(true);
               // Cập nhật trạng thái cho người B khi đã chấp nhận lời mời
