@@ -1017,6 +1017,22 @@ const Navbar = () => {
       }
     };
 
+    // useEffect(() => {
+    //     const handler = ({ fromUserId }: { fromUserId: string }) => {
+    //         alert(`${fromUserId} đang gọi bạn!`);
+            
+    //             navigate(`/call/${fromUserId}`);
+            
+    //         console.log("📞 Này bên navbar nè:", fromUserId);
+    //     };
+
+    //     socket.on("incoming-call", handler);
+
+    //     return () => {
+    //         socket.off("incoming-call", handler); 
+    //     };
+    // }, []);
+
 
   if (!isInitialized) return null;
   

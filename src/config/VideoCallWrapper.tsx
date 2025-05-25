@@ -4,8 +4,9 @@ import VideoCallWeb from './VideoCallWeb';
 export default function VideoCallWrapper() {
   const { friendId } = useParams();
 
-  // Ở đây bạn có thể dùng friendId làm roomId hoặc tạo roomId từ bạn và friendId
-  const roomId = `room_${friendId}`;
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUserId = user.userId || 'defaultUserID';
+  const roomId = [currentUserId, friendId].sort().join('_'); // Đảm bảo 2 chiều như nhau
 
   return <VideoCallWeb roomId={roomId} />;
 }

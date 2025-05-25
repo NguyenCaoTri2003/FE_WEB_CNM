@@ -2117,12 +2117,117 @@ const Home = () => {
         }
     };
 
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+        // ✅ Gửi đăng ký userId ngay khi socket kết nối
+        if (user.userId) {
+        socket.emit("register", user.userId);
+        console.log("Registered userId:", user.userId);
+        }
+
+    }, []);
+
     const handleCall = () => {
-        navigate(`/call/${selectedUser.userId}`);
-    }
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        socket.emit("call-user", {
+            fromUserId: user.userId,
+            toUserId: selectedUser.userId,
+        });
+        console.log("📞 Gửi yêu cầu gọi đến:", selectedUser.userId, selectedUser.fullName);
+
+        // Cho phép navigate luôn nếu muốn
+        // navigate(`/call/${selectedUser.userId}`);
+        Modal.info({
+            title: "Đang gọi...",
+            content: `Đang gọi cho ${selectedUser.fullName}. Vui lòng chờ phản hồi...`,
+            okButtonProps: { style: { display: "none" } }, // Ẩn nút OK
+            closable: false,
+            centered: true,
+        });
+    };
 
 
-    
+    useEffect(() => {
+        const handler = ({ fromUserId }: { fromUserId: string }) => {
+            Modal.confirm({
+            title: "Cuộc gọi đến",
+            content: `${fromUserId} đang gọi bạn. Bạn có muốn nhận cuộc gọi không?`,
+            okText: "Chấp nhận",
+            cancelText: "Từ chối",
+            onOk: () => {
+                socket.emit("call-accepted", {
+                    fromUserId,
+                    toUserId: user.userId,
+                });
+                navigate(`/call/${fromUserId}`);
+            },
+            onCancel: () => {
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                socket.emit("call-declined", {
+                    fromUserId,
+                    toUserId: user.userId,
+                });
+            },
+            });
+        };
+
+        socket.on("incoming-call", handler);
+        return () => {socket.off("incoming-call", handler)};
+    }, []);
+
+    //   useEffect(() => {
+    //     const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+    //     const declinedHandler = ({ fromUserId, toUserId }: {fromUserId: string, toUserId: string}) => {
+    //     if (fromUserId === currentUserId) {
+    //         Modal.info({
+    //         title: "Cuộc gọi bị từ chối",
+    //         content: "Người kia đã từ chối cuộc gọi.",
+    //         onOk: () => {
+    //             navigate("/user/home");
+    //         },
+    //         });
+    //         console.log("📞 Cuộc gọi bị từ chối từ:", fromUserId) ;
+    //     }
+    //     };
+
+    //     socket.on("call-declined", declinedHandler);
+    //     return () => {socket.off("call-declined", declinedHandler)};
+    // }, []);
+
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+        const handleAccepted = ({ fromUserId, toUserId }: {fromUserId: string, toUserId: string}) => {
+            if (fromUserId === user.userId) {
+                Modal.destroyAll();
+                navigate(`/call/${toUserId}`); // Vào phòng khi B đồng ý
+            }
+        };
+
+        const handleDeclined = ({ fromUserId, toUserId }: {fromUserId: string, toUserId: string}) => {
+            if (fromUserId === user.userId) {
+                Modal.destroyAll();
+                Modal.info({
+                    title: "Cuộc gọi bị từ chối",
+                    content: "Người kia đã từ chối cuộc gọi.",
+                    onOk: () => {
+                    navigate("/user/home");
+                    },
+                });
+            }
+        };
+
+        socket.on("call-accepted", handleAccepted);
+        socket.on("call-declined", handleDeclined);
+
+        return () => {
+            socket.off("call-accepted", handleAccepted);
+            socket.off("call-declined", handleDeclined);
+        };
+        }, []);
+
 
     if (loading) {
       return (
@@ -2169,7 +2274,7 @@ const Home = () => {
                             </div>
                             <div className="icon-section-chat">
                                 {/* <UsergroupAddOutlined className="icon-addgroup"/> */}
-                                <VideoCameraOutlined className="icon-videochat" onClick={handleCall} />
+                                <VideoCameraOutlined className="icon-videochat" onClick={() => {handleCall()}}/>
                                 <MenuFoldOutlined className="icon-menufold" onClick={() => {
                                     setIsSidebarOpen(!isSidebarOpen);
                                     closeListMember();

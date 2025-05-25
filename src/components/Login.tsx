@@ -112,6 +112,13 @@ const Login: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (socket && user?.userId) {
+            socket.emit("register", user.userId);
+        }
+    }, [socket]); // hoặc socket được truyền qua context
+
     // useEffect(() => {
     //     const user = JSON.parse(localStorage.getItem('user') || '{}');
     //     if (user.email) {
