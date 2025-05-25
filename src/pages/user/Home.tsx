@@ -2117,7 +2117,9 @@ const Home = () => {
         }
     };
 
-    
+    const handleCall = () => {
+        navigate(`/call/${selectedUser.userId}`);
+    }
 
 
     
@@ -2167,7 +2169,7 @@ const Home = () => {
                             </div>
                             <div className="icon-section-chat">
                                 {/* <UsergroupAddOutlined className="icon-addgroup"/> */}
-                                <VideoCameraOutlined className="icon-videochat"/>
+                                <VideoCameraOutlined className="icon-videochat" onClick={handleCall} />
                                 <MenuFoldOutlined className="icon-menufold" onClick={() => {
                                     setIsSidebarOpen(!isSidebarOpen);
                                     closeListMember();

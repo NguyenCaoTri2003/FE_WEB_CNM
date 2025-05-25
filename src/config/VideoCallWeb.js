@@ -84,12 +84,38 @@ export default function VideoCallWeb({ roomId }) {
     return peer;
   }
 
+  function endCall() {
+    // 1. Dừng local video/audio stream
+    if (userVideo.current?.srcObject) {
+      userVideo.current.srcObject.getTracks().forEach(track => track.stop());
+    }
+
+    // 2. Đóng tất cả peer connections
+    peersRef.current.forEach(p => p.peer.destroy());
+    peersRef.current = [];
+
+    // 3. Ngắt socket
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+
+    // 4. Xóa video trên màn hình
+    setPeers([]);
+
+    // 5. (Tuỳ chọn) Điều hướng về trang chủ
+    window.location.href = '/user/home'; // hoặc dùng useNavigate nếu dùng React Router
+  }
+
   return (
     <div>
       <video muted ref={userVideo} autoPlay playsInline style={{ width: 300 }} />
-      {peers.map((peer, index) => (
-        <Video key={index} peer={peer} />
+        {peers.map((peer, index) => (
+          <Video key={index} peer={peer} />
       ))}
+      <button onClick={endCall} style={{ marginTop: 20, padding: '10px 20px' }}>
+        Kết thúc cuộc gọi
+      </button>
+
     </div>
   );
 }
