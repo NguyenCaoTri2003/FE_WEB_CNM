@@ -1408,3 +1408,32 @@
 .status-offline {
     color: gray;
 }
+.image-message {
+  transition: transform 0.2s ease;
+}
+
+.image-message:hover {
+  transform: scale(1.1);
+  z-index: 10;
+  position: relative;
+}
+
+
+.image-group-container {
+  display: flex;
+  gap: 0px;
+}
+
+.stacked-image-wrapper {
+  margin-right: -12px; /* tạo hiệu ứng chồng ảnh */
+  z-index: 1;
+  position: relative;
+}
+
+.stacked-image {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 0 5px rgba(0,0,0,0.3);
+}

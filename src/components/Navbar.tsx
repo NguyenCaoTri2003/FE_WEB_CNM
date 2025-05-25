@@ -86,9 +86,18 @@ interface GroupResponse {
   message?: string;
 }
 
+type GroupType = {
+  groupId: string;
+  name: string;
+  description?: string;
+  members: string[];
+  avatar?: string; // optional
+}
+
 interface CreateGroupResponse {
   success: boolean;
   message?: string;
+  data?: GroupType;
 }
 
 interface UnfriendResponse {
@@ -104,6 +113,12 @@ interface UserResponse{
       avatar?: string;
   };
 };
+
+type UploadAvatarResponse = {
+    success: boolean;
+    avatarUrl: string;
+    message?: string;
+  };
 
 type CombinedItem = 
   | (Friend & { type: "friend" })
@@ -167,6 +182,10 @@ const Navbar = () => {
 
     const { setRefreshChat } = useGlobalContext();
 
+    const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(null);
+    const [groupAvatarPreview, setGroupAvatarPreview] = useState<string | null>(null);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
     
 
 
@@ -738,6 +757,39 @@ const Navbar = () => {
       setFilteredFriends(friends);
   }, [friends]);
 
+  const handleUploadAvatar = async (file: File) => {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(API_ENDPOINTS.uploadFile, {
+          method: 'POST',
+          headers: {
+              Authorization: `Bearer ${token}`,
+          },
+          body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const fileUrl = result.data.url;
+        console.log('Avatar uploaded successfully:', fileUrl);
+        setGroupAvatarPreview(fileUrl); // set vào state để hiển thị ảnh
+        notification.success({
+          message: 'Upload avatar thành công!'
+        });
+
+      } else {
+        alert('Upload avatar thất bại!');
+      }
+    } catch (error) {
+      console.error('Lỗi khi upload ảnh:', error);
+      alert('Upload thất bại!');
+    }
+  };
+
   const handleCreateGroup = async () => {
     const token = localStorage.getItem('token'); 
     if (selectedFriends.length < 2) {
@@ -755,9 +807,9 @@ const Navbar = () => {
   
     const groupData = {
       name: groupName,
-      description: '', // Bạn có thể cho nhập description nếu cần
-      members: selectedFriends, // Mảng email các thành viên được chọn
-      avatar: '', // Hoặc bạn cho upload hình avatar riêng, không thì để BE default
+      description: '', 
+      members: selectedFriends, 
+      avatar: groupAvatarPreview || '', 
     };
   
     try {
@@ -771,7 +823,17 @@ const Navbar = () => {
         }
       );
       if (response.data.success) {
-        alert('Tạo nhóm thành công!');
+        notification.success({
+          message: 'Tạo nhóm thành công!',
+          description: `Nhóm "${groupName}" đã được tạo.`,
+        });
+        const newGroup = response.data.data; 
+        if (!newGroup) {
+          return;
+        }
+
+        updateLastMessage(newGroup.groupId, 'Bạn đã tạo nhóm', new Date(), currentUserEmail);
+        
         fetchGroups(); // Cập nhật danh sách nhóm
         handleCloseModalGroup(); // Đóng modal
         // fetchGroups();
@@ -1501,8 +1563,21 @@ const Navbar = () => {
 
               <div className="create-search">
                 <div className="info-group">
-                  <div className="icon-camera">
-                    <CameraOutlined className="icon-choose-img"/>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    ref={fileInputRef}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleUploadAvatar(file);
+                      }
+                    }}
+                  />
+                  <div className="icon-camera" onClick={() => fileInputRef.current?.click()}>
+                     <CameraOutlined className="icon-choose-img" />
+                      {groupAvatarPreview && <img src={groupAvatarPreview} alt="avatar" className="img-icon-camera" />}
                   </div>
                   <div className="input-name">
                       <input 

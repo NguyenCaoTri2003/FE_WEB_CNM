@@ -1,3 +1,4 @@
+import { upload } from "@testing-library/user-event/dist/upload";
 import { get } from "axios";
 
 const API_BASE_URL = 'http://localhost:5000/api';
@@ -67,5 +68,6 @@ export const API_ENDPOINTS = {
     forwardMessageGroup: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/forward`,
     deleteMessageGroup: (groupId: string, messageId: string) => `${API_BASE_URL}/groups/${groupId}/messages/${messageId}/user`,
     hideMessageGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/messages/hide`,
+    uploadFileGroup: (groupId: string) => `${API_BASE_URL}/groups/${groupId}/upload`,
 
 }; 

@@ -497,6 +497,19 @@
     height: 46px;
     border-radius: 50%;
     border: 1px solid rgba(0,0,0,0.1);
+    cursor: pointer;
+}
+.img-icon-camera{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.1);
+    position: absolute;
+    object-fit: cover;
+    cursor: pointer;
 }
 .icon-choose-img{
     font-size: 1.5rem;

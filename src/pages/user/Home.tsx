@@ -18,6 +18,8 @@ import { useGlobalContext } from '../../context/GlobalContext';
 import { useGroupContext } from "../../context/GroupContext";
 import socket from "../../routes/socket";
 import EmojiPicker from 'emoji-picker-react';
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 
 // Modal.setAppElement("#root");
 // interface Reaction {
@@ -279,6 +281,9 @@ const Home = () => {
     const [forwardTarget, setForwardTarget] = useState('');
 
     const { refreshChat, setRefreshChat } = useGlobalContext();
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [photoIndex, setPhotoIndex] = useState(0);
 
     const reactionsList = ['👍', '❤️', '😂', '😮', '😢', '👎'];
 
@@ -1114,10 +1119,10 @@ const Home = () => {
 
                 setChatMessages(filteredMessages);
 
-                if (filteredMessages.length > 0) {
-                    const lastMsg = filteredMessages[filteredMessages.length - 1];
-                    updateLastMessage(selectedUser.groupId, lastMsg.content, new Date(lastMsg.createdAt), lastMsg.senderEmail);
-                }
+                // if (filteredMessages.length > 0) {
+                //     const lastMsg = filteredMessages[filteredMessages.length - 1];
+                //     updateLastMessage(selectedUser.groupId, lastMsg.content, new Date(lastMsg.createdAt), lastMsg.senderEmail);
+                // }
             } else if (selectedUser.type === 'friend') {
                 // CHAT ĐƠN
                 const response = await axios.get<GetMessagesResponse>(
@@ -1288,6 +1293,112 @@ const Home = () => {
             console.error('Upload failed:', error);
         }
     };
+
+    const handleFileChangeMuplty = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const token = localStorage.getItem('token');
+        const files = e.target.files;
+        if (!files || files.length === 0 || !selectedUser) return;
+
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const myEmail = user.email;
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+            const response = await fetch(API_ENDPOINTS.uploadFile, {
+                method: 'POST',
+                headers: {
+                Authorization: `Bearer ${token}`,
+                },
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const fileUrl = result.data.url;
+
+                if (selectedUser.type === 'group') {
+                const res = await axios.post<SendGroupMessageResponse>(
+                    `${API_ENDPOINTS.sendMessageGroup(selectedUser.groupId)}`,
+                    {
+                    content: fileUrl,
+                    type: 'file',
+                    },
+                    {
+                    headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                if (res.data.success) {
+                    const sentMsg = res.data.data;
+                    socket.emit("groupMessage", {
+                    groupId: selectedUser.groupId,
+                    message: {
+                        messageId: sentMsg.messageId,
+                        content: sentMsg.content,
+                        createdAt: sentMsg.createdAt,
+                        senderEmail: sentMsg.senderEmail,
+                    }
+                    });
+                    updateLastMessage(selectedUser.groupId, sentMsg.content, new Date(sentMsg.createdAt), myEmail);
+                    setChatMessages(prev => [...prev, sentMsg]);
+                    scrollToBottom();
+                    notification.success({
+                    message: 'Tải lên thành công',
+                    description: 'Tệp đã được gửi thành công.',
+                    });
+                }
+
+                } else if (selectedUser.type === 'friend') {
+                const res = await axios.post<SendMessageResponse>(
+                    API_ENDPOINTS.sendMessage,
+                    {
+                    receiverEmail: selectedUser.email,
+                    content: fileUrl,
+                    type: "file"
+                    },
+                    {
+                    headers: { Authorization: `Bearer ${token}` }
+                    }
+                );
+
+                if (res.data.success) {
+                    const sentMsg = res.data.data;
+                    socket.emit("newMessage", {
+                    receiverEmail: selectedUser.email,
+                    message: {
+                        messageId: sentMsg.messageId,
+                        content: sentMsg.content,
+                        createdAt: sentMsg.createdAt,
+                        senderEmail: sentMsg.senderEmail,
+                    }
+                    });
+                    updateLastMessage(selectedUser.email, sentMsg.content, new Date(sentMsg.createdAt), myEmail);
+                    setChatMessages(prev => [...prev, sentMsg]);
+                    scrollToBottom();
+                    notification.success({
+                    message: 'Tải lên thành công',
+                    description: 'Tệp đã được gửi thành công.',
+                    });
+                }
+                }
+            } else {
+                console.error('Lỗi upload:', result.message);
+                notification.error({
+                message: 'Tải lên thất bại',
+                description: result.message,
+                });
+            }
+            } catch (error) {
+            console.error('Upload failed:', error);
+            }
+        }
+        };
+
     
     const getFileIcon = (filename: string) => {
         const extension = filename.split('.').pop()?.toLowerCase();
@@ -1361,53 +1472,7 @@ const Home = () => {
 
     
 
-    const handleAddMembers = async () => {
-        setLoading(true);
-        if (selectedFriends.length === 0) {
-        alert("Bạn chưa chọn thành viên nào để thêm!");
-        return;
-        }
     
-        try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            console.error("Chưa đăng nhập");
-            return;
-        }
-        await axios.post(`${API_ENDPOINTS.addGroupMembers(friend.groupId)}`, 
-            { memberIds: selectedFriends },
-            { headers: { Authorization: `Bearer ${token}` } }
-        );
-    
-        // Sau khi thêm thành công, cập nhật groupMembers
-        setGroupMembers((prev) => [...prev, ...selectedFriends]);
-
-        selectedFriends.forEach((memberId) => {
-            socket.emit('addMemberGroup', { groupId: friend.groupId, userId: memberId });
-            
-        });
-    
-        // Xóa danh sách selectedFriends sau khi thêm xong
-        setSelectedFriends([]);
-        fetchGroupMembers(); // Tải lại danh sách thành viên nhóm
-        setIsModalOpenGroup(false);
-        setIsSidebarOpen(false);
-        setShowList(false);
-        
-        //alert("Thêm thành viên thành công!");
-        notification.success({
-            message: 'Thêm thành viên thành công!',
-        });
-      
-        } catch (error) {
-          console.error("Lỗi khi thêm thành viên:", error);
-          notification.error({
-            message: 'Có lỗi xảy ra khi thêm thành viên!',
-        });
-        } finally {
-          setLoading(false);
-        }
-    };
 
     
 
@@ -1442,6 +1507,7 @@ const Home = () => {
             if (response.status === 200) {
                 setMembers(prev => prev.filter(member => member.userId !== memberId));
                 setGroupMembers(prev => prev.filter(member => member !== memberId)); 
+                updateLastMessage(groupId, "Đã xóa thành viên", new Date(), user.email);
                 fetchGroupMembers(); 
                 setSelectedUserModal('');
                 notification.success({
@@ -1792,14 +1858,14 @@ const Home = () => {
             });
 
             if (response.data.success) {
-                alert('Bạn đã rời khỏi nhóm thành công!');
+                notification.success({
+                    message: 'Bạn đã rời khỏi nhóm thành công!',
+                });
                 console.log("📤 Emit leaveGroupWeb", { groupId, userEmail: currentUserEmail });
                 socket.emit('leaveGroupWeb', { groupId, userEmail: currentUserEmail });
                 
                 fetchGroups(); // Cập nhật lại danh sách nhóm
-                notification.success({
-                    message: 'Rời khỏi nhóm thành công!',
-                });
+                updateLastMessage(groupId, "Đã rời nhóm", new Date(), user.email);
             // Cập nhật lại danh sách nhóm hoặc chuyển hướng người dùng
             // Ví dụ: fetchUserGroups();
             } else {
@@ -1944,7 +2010,7 @@ const Home = () => {
             if (msg.groupId === groupId && msg.type === 'system') {
                 setChatMessages(prev => {
                 const updated = [...prev, { ...msg, isSystem: true, messageId: `system-${Date.now()}-${Math.random()}` }];
-                console.log('✅ Chat messages sau khi thêm system message:', updated);
+                updateLastMessage(groupId, msg.content, new Date(msg.createdAt), msg.senderEmail);
                 return updated;
                 });
             }
@@ -1959,6 +2025,55 @@ const Home = () => {
             socket.off('groupMessageLeave', handleGroupMessage);
         };
     }, [groupId]);
+
+    const handleAddMembers = async () => {
+        setLoading(true);
+        if (selectedFriends.length === 0) {
+        alert("Bạn chưa chọn thành viên nào để thêm!");
+        return;
+        }
+    
+        try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            console.error("Chưa đăng nhập");
+            return;
+        }
+        await axios.post(`${API_ENDPOINTS.addGroupMembers(friend.groupId)}`, 
+            { memberIds: selectedFriends },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+    
+        // Sau khi thêm thành công, cập nhật groupMembers
+        setGroupMembers((prev) => [...prev, ...selectedFriends]);
+
+        selectedFriends.forEach((memberId) => {
+            socket.emit('addMemberGroup', { groupId: friend.groupId, userId: memberId });
+            
+        });
+        updateLastMessage(friend.groupId, "Đã thêm thành viên mới", new Date(), user.email);
+    
+        // Xóa danh sách selectedFriends sau khi thêm xong
+        setSelectedFriends([]);
+        fetchGroupMembers(); // Tải lại danh sách thành viên nhóm
+        setIsModalOpenGroup(false);
+        setIsSidebarOpen(false);
+        setShowList(false);
+        
+        //alert("Thêm thành viên thành công!");
+        notification.success({
+            message: 'Thêm thành viên thành công!',
+        });
+      
+        } catch (error) {
+          console.error("Lỗi khi thêm thành viên:", error);
+          notification.error({
+            message: 'Có lỗi xảy ra khi thêm thành viên!',
+        });
+        } finally {
+          setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (!groupId) return;
@@ -2015,6 +2130,8 @@ const Home = () => {
         </div>
       );
     }
+
+    const imageMessages = chatMessages.filter(msg => /\.(jpg|jpeg|png|gif|webp)$/i.test(msg.content));
 
     return (
         <div className="home-container">
@@ -2098,12 +2215,43 @@ const Home = () => {
                                     );
                                 }
 
+                                const imageIndex = imageMessages.findIndex(imgMsg => imgMsg.messageId === msg.messageId);
+
+                                // if (isImage) {
+                                //     // Hiển thị ảnh theo kiểu ảnh chồng (thumbnail stacked)
+                                //     // Khi bấm mở lightbox để xem ảnh lớn
+                                //     // Tìm index của ảnh trong mảng ảnh
+                                //     const imageIndex = imageMessages.findIndex(imgMsg => imgMsg.messageId === msg.messageId);
+
+                                //     return (
+                                //         <div
+                                //             key={msg.messageId}
+                                //             className={`message-item-chat image-message ${messageClass}`}
+                                //             onClick={() => {
+                                //                 setPhotoIndex(imageIndex);
+                                //                 setIsOpen(true);
+                                //             }}
+                                //             style={{
+                                //                 display: 'inline-block',
+                                //                 marginRight: '-15px', // để ảnh chồng lên nhau
+                                //                 cursor: 'pointer',
+                                //             }}
+                                            
+                                //         >
+                                //         <img
+                                //             src={msg.content}
+                                //             alt="img"
+                                //             style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', boxShadow: '0 0 5px rgba(0,0,0,0.3)' }}
+                                //         />
+                                //         </div>
+                                //     );
+                                // }
                                 
                                 return (
                                     <div
                                         key={msg.messageId}
                                         className={`message-item-chat ${messageClass}`}
-                                       
+                                        
                                         onMouseLeave={() => {
                                             hideOptionsTimeout.current = setTimeout(() => {
                                                 setHoveredMsgId(null);
@@ -2118,7 +2266,9 @@ const Home = () => {
                                             setHoveredMsgId(msg.messageId);
                                         }}
                                         // onMouseLeave={() => setHoveredMsgId(null)}
+                                        
                                         // onMouseEnter={() => setHoveredMsgId(msg.messageId)}
+                                        
                                     >
                                     <div className="message-content">
                                          {/* Nếu là group và không phải tin nhắn của mình thì hiển thị tên */}
@@ -2163,15 +2313,23 @@ const Home = () => {
 
                                         {msg.isRecalled ? (
                                             <i style={{ color: 'gray' }}>Tin nhắn đã được thu hồi</i>
-                                        ) : msg.type === 'image' ||  isImage ? (
-                                        <a href={msg.content} target="_blank" rel="noopener noreferrer">
-                                            <img
-                                            src={msg.content}
-                                            alt="img"
-                                            style={{ maxWidth: 200, borderRadius: 8 }}
-                                            />
-                                        </a>
-                                        ) : isVideo ? (
+                                        ) 
+                                        : msg.type === 'image' ||  isImage ? (
+                                            <a target="_blank" rel="noopener noreferrer">
+                                                <img
+                                                    src={msg.content}
+                                                    alt="img"
+                                                    style={{ width: 80, height: 80, borderRadius: 8, objectFit: 'cover', boxShadow: '0 0 5px rgba(0,0,0,0.3)' }}
+                                                    onClick={() => {
+                                                    if (isImage) {
+                                                        setPhotoIndex(imageIndex);
+                                                        setIsOpen(true);
+                                                    }
+                                                }}
+                                                />
+                                            </a>
+                                        ) 
+                                        : isVideo ? (
                                             <video
                                                 src={msg.content}
                                                 controls
@@ -2331,8 +2489,20 @@ const Home = () => {
                                     </div>
                                     
                                 );
+
+                                 
                                 
                             })}
+
+                            {isOpen && (
+                                <Lightbox
+                                    open={isOpen}
+                                    close={() => setIsOpen(false)}
+                                    slides={imageMessages.map(msg => ({ src: msg.content }))}
+                                    index={photoIndex}
+                                />
+                            )}
+
                             {showScrollToBottom && (
                                 <div
                                     className="scroll-to-bottom"
@@ -2382,8 +2552,9 @@ const Home = () => {
                                     type="file"
                                     id="imgInput"
                                     accept="image/*"
+                                    multiple
                                     style={{ display: 'none' }}
-                                    onChange={handleFileChange}
+                                    onChange={handleFileChangeMuplty}
                                 />
                                 <button onClick={() => document.getElementById('imgInput')?.click()} className="btn-file">
                                 <FontAwesomeIcon icon={faImage} />
