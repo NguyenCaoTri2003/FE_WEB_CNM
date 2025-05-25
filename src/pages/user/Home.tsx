@@ -2138,21 +2138,29 @@ const Home = () => {
 
         // Cho phép navigate luôn nếu muốn
         // navigate(`/call/${selectedUser.userId}`);
-        Modal.info({
+        Modal.confirm({
             title: "Đang gọi...",
             content: `Đang gọi cho ${selectedUser.fullName}. Vui lòng chờ phản hồi...`,
-            okButtonProps: { style: { display: "none" } }, // Ẩn nút OK
-            closable: false,
+            okButtonProps: { style: { display: "none" } }, // Ẩn nút OK vì không cần
+            cancelText: "Hủy cuộc gọi", // Hiện nút Cancel
             centered: true,
+            onCancel: () => {
+                socket.emit("call-cancelled", {
+                fromUserId: user.userId,
+                toUserId: selectedUser.userId,
+                });
+                console.log("📞 Cuộc gọi đã bị hủy");
+            }
         });
     };
 
 
     useEffect(() => {
         const handler = ({ fromUserId }: { fromUserId: string }) => {
+            const fullName = selectedUser?.fullName || "Người dùng";
             Modal.confirm({
             title: "Cuộc gọi đến",
-            content: `${fromUserId} đang gọi bạn. Bạn có muốn nhận cuộc gọi không?`,
+            content: `${fullName} đang gọi bạn. Bạn có muốn nhận cuộc gọi không?`,
             okText: "Chấp nhận",
             cancelText: "Từ chối",
             onOk: () => {
@@ -2175,26 +2183,6 @@ const Home = () => {
         socket.on("incoming-call", handler);
         return () => {socket.off("incoming-call", handler)};
     }, []);
-
-    //   useEffect(() => {
-    //     const user = JSON.parse(localStorage.getItem("user") || "{}");
-
-    //     const declinedHandler = ({ fromUserId, toUserId }: {fromUserId: string, toUserId: string}) => {
-    //     if (fromUserId === currentUserId) {
-    //         Modal.info({
-    //         title: "Cuộc gọi bị từ chối",
-    //         content: "Người kia đã từ chối cuộc gọi.",
-    //         onOk: () => {
-    //             navigate("/user/home");
-    //         },
-    //         });
-    //         console.log("📞 Cuộc gọi bị từ chối từ:", fromUserId) ;
-    //     }
-    //     };
-
-    //     socket.on("call-declined", declinedHandler);
-    //     return () => {socket.off("call-declined", declinedHandler)};
-    // }, []);
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -2219,12 +2207,22 @@ const Home = () => {
             }
         };
 
+        const handleCancelled = ({ fromUserId }: {fromUserId: string}) => {
+            Modal.destroyAll(); // Đóng modal gọi đến nếu còn mở
+            Modal.info({
+            title: "Cuộc gọi bị hủy",
+            content: `Người gọi đã hủy cuộc gọi.`,
+            });
+        };
+
         socket.on("call-accepted", handleAccepted);
         socket.on("call-declined", handleDeclined);
+        socket.on("call-cancelled", handleCancelled);
 
         return () => {
             socket.off("call-accepted", handleAccepted);
             socket.off("call-declined", handleDeclined);
+            socket.off("call-cancelled", handleCancelled);
         };
         }, []);
 
