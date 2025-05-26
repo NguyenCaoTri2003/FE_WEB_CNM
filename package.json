@@ -17,6 +17,7 @@
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",
     "@zegocloud/zego-uikit-prebuilt": "^2.14.3-beta",
+    "agora-rtc-sdk-ng": "^4.23.3",
     "antd": "^5.24.6",
     "axios": "^1.8.4",
     "bootstrap": "^5.3.3",

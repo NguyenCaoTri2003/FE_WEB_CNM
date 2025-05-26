@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 import { useNavigate } from "react-router-dom";
+import socket from "routes/socket";
+import { Modal } from "antd";
 
 
 export default function VideoCallWeb({ roomId }) {
@@ -14,6 +16,10 @@ export default function VideoCallWeb({ roomId }) {
   const navigate = useNavigate(); 
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (user.userId) {
+      socket.emit("register", user.userId);
+    }
     const init = async () => {
       const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
         appID,
@@ -32,7 +38,12 @@ export default function VideoCallWeb({ roomId }) {
         showPreJoinView: false,
         onLeaveRoom: () => {
           console.log("👋 Đã rời khỏi phòng, chuyển về Home");
+          socket.emit("call-ended", { roomId });
           navigate("/user/home"); // ✅ quay lại home
+           setTimeout(() => {
+            navigate("/user/home");
+            window.location.reload(); 
+          }, 500); // chờ 500ms trước khi reload để đảm bảo emit xong
         },
       });
     };
@@ -40,7 +51,30 @@ export default function VideoCallWeb({ roomId }) {
     if (containerRef.current) {
       init();
     }
-  }, [roomId]); // 👈 gọi lại khi roomId thay đổi
+
+    
+  }, [roomId]); 
+
+  useEffect(() => {
+    const handleCallEnded = ({ roomId }) => {
+      console.log("📩 Đã nhận call-ended trong VideoCallWeb");
+      Modal.destroyAll();
+      Modal.info({
+        title: "Cuộc gọi đã kết thúc",
+        content: "Người kia đã rời khỏi cuộc gọi.",
+        onOk: () => {
+          navigate("/user/home");
+          window.location.reload();
+        },
+      });
+    };
+
+    socket.on("call-ended", handleCallEnded);
+
+    return () => {
+      socket.off("call-ended", handleCallEnded);
+    };
+  }, []);
 
   return <div ref={containerRef} style={{ width: "100vw", height: "100vh" }} />;
 }

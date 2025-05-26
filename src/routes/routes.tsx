@@ -68,8 +68,9 @@ import UpdatePassword from 'components/UpdatePassword';
 import PrivateRoute from './PrivateRoutes';
 import AddFriend from '../pages/user/FriendLayout/pages/AddFriend';
 import SearchNavbar from 'components/SearchNavbar';
-import VideoCallWeb from 'config/VideoCallWeb';
-import VideoCallWrapper from 'config/VideoCallWrapper';
+import VideoCallWeb from 'videocall/VideoCallWeb';
+import VideoCallWrapper from 'videocall/VideoCallWrapper';
+import CallRedirector from 'videocall/CallRedirector';
 
 const AppRoutes = () => {
   return (
@@ -83,6 +84,7 @@ const AppRoutes = () => {
             </PrivateRoute>} 
             
         />
+        <Route path="/call-loader/:friendId" element={<CallRedirector />} />
         <Route path="/call/:friendId" element={<VideoCallWrapper />} />
          <Route path="search" element={<SearchNavbar />} />
         {/* <Route path="danh-sach" element={<FriendLayout />} >

@@ -37,12 +37,6 @@ const FriendLayout = () => {
                             <p className='menu-item-name'>Lời mời kết bạn</p>
                         </div>
                     </Link>
-                    <Link to="danh-sach-loi-moi-vao-nhom">
-                        <div className='menu-item'>
-                            <UserAddOutlined className="icon-adduser"/>
-                            <p className='menu-item-name'>Lời mời vào nhóm</p>
-                        </div>
-                    </Link>
                 </div>
             </div>
             <div className="right-section">

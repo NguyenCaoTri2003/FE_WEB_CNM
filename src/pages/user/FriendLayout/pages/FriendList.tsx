@@ -4,6 +4,9 @@ import "../../../../assets/styles/FriendList.css";
 import { API_ENDPOINTS } from "config/api";
 import axios from "axios";
 import socket from "routes/socket";
+import { useMessageContext } from "../../../../context/MessagesContext";
+import { notification} from "antd";
+import 'antd/dist/reset.css';
 
 interface Friend {
   email: string;
@@ -25,7 +28,8 @@ const FriendList = () => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFriend, setActiveFriend] = useState<string | null>(null); // Track active friend email
-  const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null); // Track popup position
+  const [popupPosition, setPopupPosition] = useState<{ top: number; left: number } | null>(null);
+  const { lastMessages, updateLastMessage, removeLastMessage  } = useMessageContext()!;
 
   const fetchFriends = async () => {
     try {
@@ -102,17 +106,12 @@ const FriendList = () => {
   //   }, 3000); // Sau 3 giây, ẩn loading
   // }, []);
 
-  if (loading) {
-    return (
-      <div className='spinnerContainer'>
-        <div className='spinner'></div>
-        <p>Vui lòng đợi trong giây lát...</p>
-      </div>
-    );
-  }
+  
 
   const unfriend = async (friendEmail: string) => {
+    setLoading(true);
     try {
+
         const token = localStorage.getItem("token");
         if (!token) {
             console.error("Token không tồn tại, người dùng chưa đăng nhập");
@@ -130,17 +129,52 @@ const FriendList = () => {
         );
 
         if (response.data.success) {
-            console.log("Đã hủy kết bạn thành công");
+            notification.success({
+              message: "Hủy kết bạn thành công"
+            });
 
             setFriends(prevFriends => prevFriends.filter(friends => friends.email !== friendEmail));
+            removeLastMessage(friendEmail); 
+            socket.emit("unfriend", {
+              targetEmail: friendEmail,
+            });
 
         } else {
             console.error(response.data.message);
         }
     } catch (error) {
         console.error("Lỗi khi hủy kết bạn:", error);
+        notification.error({
+          message: "Lỗi khi hủy kết bạn"
+        });
+    } finally {
+        setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handleFriendUnfriend = (data: any) => {
+      if (data.type === 'unfriend') {
+        setFriends(prev => prev.filter(friend => friend.email !== data.email));
+        removeLastMessage(data.email); // Nếu muốn xóa đoạn chat
+      }
+    };
+
+    socket.on('friendListUpdate', handleFriendUnfriend);
+
+    return () => {
+      socket.off('friendListUpdate', handleFriendUnfriend);
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className='spinnerContainer'>
+        <div className='spinner'></div>
+        <p>Vui lòng đợi trong giây lát...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="contact-page">

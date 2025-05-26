@@ -186,9 +186,9 @@ const Navbar = () => {
     const [groupAvatarPreview, setGroupAvatarPreview] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [loading, setLoading] = useState(false);
     
-
-
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -477,6 +477,7 @@ const Navbar = () => {
       const currentUserEmail  = user.email;
 
       console.log("currentUserEmail:", currentUserEmail);
+      setLoading(true);
       try {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -497,7 +498,9 @@ const Navbar = () => {
         if (response.data.success) {
           console.log("Đã gửi lời mời kết bạn");
           setHasSentRequest(true);
-
+          notification.success({
+            message: 'Lời mời kết bạn đã được gửi thành công!',
+          });
           socket.emit("friendRequestSent", {
             senderEmail: currentUserEmail,
             receiverEmail: receiverEmail,
@@ -511,18 +514,25 @@ const Navbar = () => {
         }
       } catch (err) {
         console.error(err);
-        console.log("Lỗi khi gửi lời mời");
+        notification.error({
+          message: 'Đã có lỗi xảy ra khi gửi lời mời kết bạn. Vui lòng thử lại sau.',
+        });
+      } finally {
+        setLoading(false);
       }
     };
 
     const cancelFriendRequest = async (receiverEmail: string) => {
+      setLoading(true);
         try {
           const response = await axios.post<FriendRequestResponse>(API_ENDPOINTS.withdrawFriendRequest, {
             receiverEmail
           });
       
           if (response.data.success) {
-            console.log("Đã thu hồi lời mời");
+            notification.success({
+              message: 'Lời mời kết bạn đã được thu hồi thành công!',
+            });
             setHasSentRequest(false);
             socket.emit("withdrawFriendRequest", {
               senderEmail: currentUserEmail,
@@ -533,7 +543,11 @@ const Navbar = () => {
           }
         } catch (err) {
           console.error(err);
-          console.log("Lỗi khi thu hồi lời mời");
+          notification.error({
+            message: 'Đã có lỗi xảy ra khi thu hồi lời mời kết bạn. Vui lòng thử lại sau.',
+          });
+        } finally {
+          setLoading(false);
         }
     };
 
@@ -562,6 +576,7 @@ const Navbar = () => {
     }, []);
 
     const unfriend = async (friendEmail: string) => {
+      setLoading(true);
       try {
           const token = localStorage.getItem("token");
           const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -582,7 +597,9 @@ const Navbar = () => {
           );
   
           if (response.data.success) {
-              console.log("Đã hủy kết bạn thành công");
+              notification.success({
+                message: 'Đã hủy kết bạn thành công!',
+              });
   
               // Xóa người bạn đó khỏi danh sách friends
               setFriends(prevFriends => prevFriends.filter(friend => friend.email !== friendEmail));
@@ -601,6 +618,11 @@ const Navbar = () => {
           }
       } catch (error) {
           console.error("Lỗi khi hủy kết bạn:", error);
+          notification.error({
+            message: 'Đã có lỗi xảy ra khi hủy kết bạn. Vui lòng thử lại sau.',
+          });
+      } finally {
+          setLoading(false);
       }
     };
 
@@ -624,13 +646,15 @@ const Navbar = () => {
     
           if (response.data.success) {
             if (accept) {
-              console.log("Đã chấp nhận lời mời kết bạn");
+              notification.success({
+                message: 'Bạn đã chấp nhận lời mời kết bạn thành công!',
+              });
 
               socket.emit('friendRequestAccepted', {
                 email: senderEmail,
               });
 
-              removeLastMessage(senderEmail); 
+              updateLastMessage(senderEmail, "Bạn đã trở thành bạn bè", new Date(), currentUserEmail);
               setRefreshChat(true);
               // Cập nhật trạng thái cho người B khi đã chấp nhận lời mời
               if (currentUserEmail === senderEmail) {
@@ -653,7 +677,9 @@ const Navbar = () => {
                 localStorage.setItem("messagedUsers", JSON.stringify([...existing, friend]));
               }            
             } else {
-              console.log("Đã từ chối lời mời kết bạn");
+              notification.info({
+                message: 'Bạn đã từ chối lời mời kết bạn.',
+              });
               setHasIncomingRequest(false);  // Người B đã từ chối
             }
             setHasIncomingRequest(false);  // Xóa trạng thái lời mời sau khi phản hồi
@@ -662,7 +688,9 @@ const Navbar = () => {
           }
       } catch (error) {
         console.error("Không thể phản hồi lời mời kết bạn:", error);
-        alert("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
+        notification.error({
+          message: 'Đã có lỗi xảy ra khi phản hồi lời mời kết bạn. Vui lòng thử lại sau.',
+        });
       }
   };
   
@@ -782,18 +810,25 @@ const Navbar = () => {
         });
 
       } else {
-        alert('Upload avatar thất bại!');
+        notification.error({
+          message: 'Upload avatar thất bại!',
+          description: result.message || 'Vui lòng thử lại sau.'
+        });
       }
     } catch (error) {
       console.error('Lỗi khi upload ảnh:', error);
-      alert('Upload thất bại!');
+      notification.error({
+        message: 'Đã có lỗi xảy ra khi upload ảnh. Vui lòng thử lại sau.',
+      });
     }
   };
 
   const handleCreateGroup = async () => {
     const token = localStorage.getItem('token'); 
     if (selectedFriends.length < 2) {
-      alert('Bạn phải chọn ít nhất 2 thành viên để tạo nhóm.');
+      notification.error({
+        message: 'Bạn cần chọn ít nhất 2 thành viên để tạo nhóm.',
+      });
       return;
     }
   
@@ -839,11 +874,16 @@ const Navbar = () => {
         // fetchGroups();
         // Bạn có thể thêm: load lại danh sách nhóm nếu muốn
       } else {
-        alert('Tạo nhóm thất bại: ' + response.data.message);
+        notification.error({
+          message: 'Tạo nhóm thất bại!',
+          description: response.data.message || 'Vui lòng thử lại sau.',
+        });
       }
     } catch (error) {
       console.error('Error creating group:', error);
-      alert('Có lỗi khi tạo nhóm.');
+      notification.error({
+        message: 'Đã có lỗi xảy ra khi tạo nhóm. Vui lòng thử lại sau.',
+      });
     }
   };
 
@@ -1036,7 +1076,14 @@ const Navbar = () => {
 
   if (!isInitialized) return null;
   
-    
+  if (loading) {
+    return (
+      <div className='spinnerContainer'>
+        <div className='spinner'></div>
+        <p>Vui lòng đợi trong giây lát...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container-main">

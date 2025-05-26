@@ -8,6 +8,12 @@ const socket = io('http://localhost:5000', {
     token: token,
   },
 });
+// const socket = io('https://be-zalo-cnm.onrender.com', {
+//   transports: ['websocket'],
+//   auth: {
+//     token: token,
+//   },
+// });
 
 
 

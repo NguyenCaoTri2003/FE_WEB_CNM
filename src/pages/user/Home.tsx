@@ -16,6 +16,7 @@ import { useMessageContext } from "../../context/MessagesContext";
 import { useUnreadMessages } from '../../context/UnreadMessagesContext';
 import { useGlobalContext } from '../../context/GlobalContext'; 
 import { useGroupContext } from "../../context/GroupContext";
+
 import socket from "../../routes/socket";
 import EmojiPicker from 'emoji-picker-react';
 import Lightbox from "yet-another-react-lightbox";
@@ -1878,38 +1879,23 @@ const Home = () => {
             setLoading(false);
         }
     };
-      
+
     useEffect(() => {
-        socket.on('messageRead', (data: { messageId: string }) => {
-            const { messageId } = data;
-            setChatMessages(prev =>
-                prev.map(msg =>
-                    msg.messageId === messageId ? { ...msg, status: 'read' } : msg
-                )
-            );
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+        socket.on("connect", () => {
+            if (user.userId) {
+                socket.emit("register", user.userId);
+                console.log("✅ Registered userId on socket connect:", user.userId);
+            }
         });
-    
+
         return () => {
-            socket.off('messageRead');
+            socket.off("connect");
         };
     }, []);
-
-    useEffect(() => {
-        const unreadMessages = chatMessages.filter(
-            msg => msg.status !== 'read' && msg.receiverEmail === user.email
-        );
-
-        const token = localStorage.getItem('token');
+      
     
-        unreadMessages.forEach(msg => {
-            fetch(`${API_ENDPOINTS.markAsRead(msg.messageId)}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                }
-            });
-        });
-    }, [chatMessages]);
 
     useEffect(() => {
     if (!socket) return;
@@ -1999,6 +1985,51 @@ const Home = () => {
         };
     }, [selectedUser]);
 
+    
+
+    useEffect(() => {
+        const unreadMessages = chatMessages.filter(
+            msg => msg.status !== 'read' && msg.receiverEmail === user.email
+        );
+
+        const token = localStorage.getItem('token');
+    
+        unreadMessages.forEach(msg => {
+            console.log("📤 Gửi markAsRead cho:", msg.messageId);
+            fetch(`${API_ENDPOINTS.markAsRead(msg.messageId)}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                }
+            })
+            .then(res => {
+            if (!res.ok) throw new Error("Không đánh dấu được đã đọc");
+            console.log("✅ Đã gửi markAsRead:", msg.messageId);
+            socket.emit('messageRead', {
+                messageId: msg.messageId,
+                senderEmail: msg.senderEmail, // rất quan trọng!
+            });
+        })
+        .catch(err => console.error("❌ Lỗi markAsRead:", err));
+        });
+    }, [chatMessages, user.email]);
+
+    useEffect(() => {
+        socket.on('messageRead', (data: { messageId: string }) => {
+            const { messageId } = data;
+            console.log("📩 Nhận tin nhắn đã đọc:", messageId);
+            setChatMessages(prev =>
+                prev.map(msg =>
+                    msg.messageId === messageId ? { ...msg, status: 'read' } : msg
+                )
+            );
+        });
+    
+        return () => {
+            socket.off('messageRead');
+        };
+    }, []);
+
 
     useEffect(() => {
         if (!groupId) return;
@@ -2066,10 +2097,12 @@ const Home = () => {
         });
       
         } catch (error) {
-          console.error("Lỗi khi thêm thành viên:", error);
-          notification.error({
-            message: 'Có lỗi xảy ra khi thêm thành viên!',
-        });
+        //   console.error("Lỗi khi thêm thành viên:", error);
+
+            notification.error({
+                message: 'Bạn chưa được bật quyền thêm thành viên',
+            });
+            setIsModalOpenGroup(false);
         } finally {
           setLoading(false);
         }
@@ -2117,16 +2150,7 @@ const Home = () => {
         }
     };
 
-    useEffect(() => {
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
-
-        // ✅ Gửi đăng ký userId ngay khi socket kết nối
-        if (user.userId) {
-        socket.emit("register", user.userId);
-        console.log("Registered userId:", user.userId);
-        }
-
-    }, []);
+    
 
     const handleCall = () => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -2169,6 +2193,8 @@ const Home = () => {
                     toUserId: user.userId,
                 });
                 navigate(`/call/${fromUserId}`);
+                // window.location.reload(); // Reload để vào phòng gọi
+                
             },
             onCancel: () => {
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -2185,12 +2211,33 @@ const Home = () => {
     }, []);
 
     useEffect(() => {
+        socket.on("call-ended", ({ roomId } :{roomId: string}) => {
+            console.log("📥 Đã nhận call-ended ở VideoCallWeb");
+            Modal.destroyAll(); // Hoặc update UI tùy logic của bạn
+            Modal.info({
+            title: "Cuộc gọi đã kết thúc",
+            content: "Người kia đã rời khỏi cuộc gọi.",
+            onOk: () => {
+                navigate("/user/home");
+                window.location.reload();
+            },
+            });
+        });
+
+        return () => {
+            socket.off("call-ended");
+        };
+    }, []);
+
+
+    useEffect(() => {
         const user = JSON.parse(localStorage.getItem("user") || "{}");
 
         const handleAccepted = ({ fromUserId, toUserId }: {fromUserId: string, toUserId: string}) => {
             if (fromUserId === user.userId) {
                 Modal.destroyAll();
                 navigate(`/call/${toUserId}`); // Vào phòng khi B đồng ý
+                window.location.reload(); 
             }
         };
 
@@ -2201,7 +2248,8 @@ const Home = () => {
                     title: "Cuộc gọi bị từ chối",
                     content: "Người kia đã từ chối cuộc gọi.",
                     onOk: () => {
-                    navigate("/user/home");
+                        navigate("/user/home");
+                        window.location.reload(); // Reload để về trang chính
                     },
                 });
             }
@@ -2215,16 +2263,32 @@ const Home = () => {
             });
         };
 
+        const handleCallEnded = ({ roomId }: { roomId: string }) => {
+            Modal.destroyAll();
+            Modal.info({
+                title: "Cuộc gọi kết thúc",
+                content: "Người kia đã rời cuộc gọi.",
+                onOk: () => {
+                    navigate("/user/home");
+                    window.location.reload();
+                    console.log("📞 Cuộc gọi đã kết thúc, chuyển về trang chính");
+                },
+            });
+        };
+
+
         socket.on("call-accepted", handleAccepted);
         socket.on("call-declined", handleDeclined);
         socket.on("call-cancelled", handleCancelled);
+        socket.on("call-ended", handleCallEnded);
 
         return () => {
             socket.off("call-accepted", handleAccepted);
             socket.off("call-declined", handleDeclined);
             socket.off("call-cancelled", handleCancelled);
+            socket.off("call-ended", handleCallEnded);
         };
-        }, []);
+    }, []);
 
 
     if (loading) {

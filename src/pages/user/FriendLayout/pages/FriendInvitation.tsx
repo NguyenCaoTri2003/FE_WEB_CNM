@@ -5,6 +5,9 @@ import { UserAddOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { API_ENDPOINTS } from "config/api";
 import socket from "routes/socket";
+import { useMessageContext } from "context/MessagesContext";
+import { notification} from "antd";
+import 'antd/dist/reset.css';
 
 // interface FriendRequest {
 //     senderEmail: string;
@@ -38,6 +41,7 @@ const FriendInvitation: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<FriendRequest | null>(null);
+    const { lastMessages, updateLastMessage, removeLastMessage  } = useMessageContext()!;
 
     useEffect(() => {
         // Fetch friend requests from API
@@ -59,6 +63,7 @@ const FriendInvitation: React.FC = () => {
             if (response.data.success) {
               setFriendRequests(response.data.data.received);
               setSentRequests(response.data.data.sent);
+
             } else {
               console.error('Không thể tải danh sách lời mời kết bạn');
             }
@@ -73,6 +78,8 @@ const FriendInvitation: React.FC = () => {
     
     const handleRespondToRequest = async (senderEmail: string, accept: boolean) => {
         try {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            const myEmail = user.email;
             const token = localStorage.getItem('token');
             if (!token) {
                 console.error('Người dùng chưa đăng nhập hoặc token không hợp lệ');
@@ -91,10 +98,23 @@ const FriendInvitation: React.FC = () => {
             setFriendRequests(prevRequests => 
                 prevRequests.filter(request => request.email !== senderEmail)
             );
+            updateLastMessage(senderEmail, "Bạn đã trở thành bạn bè", new Date(), myEmail);
+            notification.success({
+                message: accept ? "Chấp nhận lời mời thành công" : "Từ chối lời mời thành công",
+                description: accept ? "Bạn đã trở thành bạn bè với người dùng này." : "Bạn đã từ chối lời mời kết bạn.",
+            });
+            if (accept) {
+                socket.emit("friendRequestAccepted", {
+                    senderEmail,         // người gửi lời mời
+                    accepterEmail: myEmail, // người chấp nhận
+                });
+            }
           }
         } catch (error) {
           console.error("Không thể phản hồi lời mời kết bạn:", error);
-          alert("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
+          notification.error({
+            message: "Lỗi khi phản hồi lời mời kết bạn"
+          });
         }
     };
 
@@ -119,10 +139,15 @@ const FriendInvitation: React.FC = () => {
                 setSentRequests(prevRequests =>
                     prevRequests.filter(request => request.email !== receiverEmail)
                 );
+                notification.success({
+                    message: "Hủy lời mời kết bạn thành công"
+                });
             }
         } catch (error) {
             console.error("Không thể hủy lời mời kết bạn:", error);
-            alert("Đã có lỗi xảy ra. Vui lòng thử lại sau.");
+            notification.error({
+                message: "Lỗi khi hủy lời mời kết bạn"
+            });
         }
     };
 
@@ -142,6 +167,19 @@ const FriendInvitation: React.FC = () => {
       };
 
       const handleFriendListUpdate = (data: any) => {
+        if (data.type === "newFriend") {
+          console.log("Đã thêm bạn mới:", data.friend.fullName);
+
+          // ✅ Cập nhật lastMessages nếu có
+          if (data.lastMessage && updateLastMessage) {
+            const { senderEmail, message, time } = data.lastMessage;
+            const friendEmail = data.friend.email;
+           updateLastMessage(friendEmail, message, new Date(time), senderEmail);
+          }
+
+          setFriendRequests(prev => prev.filter(friend => friend.email !== data.friend.email));
+        }
+
         if (data.type === "unfriend") {
           console.log("Bị hủy kết bạn với:", data.email);
           setFriendRequests(prev => prev.filter(friend => friend.email !== data.email));
