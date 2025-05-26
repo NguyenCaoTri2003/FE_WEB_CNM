@@ -1510,12 +1510,6 @@ const Navbar = () => {
                                     <p className='menu-item-name'>Lời mời kết bạn</p>
                                 </div>
                             </Link>
-                            <Link to="danh-sach-loi-moi-vao-nhom">
-                                <div className='menu-item'>
-                                    <UserAddOutlined className="icon-adduser"/>
-                                    <p className='menu-item-name'>Lời mời vào nhóm</p>
-                                </div>
-                            </Link>
                         </div>
                     )}
                     {activeTab === "showAllSetting" && (
@@ -1524,24 +1518,6 @@ const Navbar = () => {
                               <div className='menu-item'>
                                   <SettingTwoTone className="icon-adduser"/>
                                   <p className='menu-item-name'>Cập nhật mật khẩu</p>
-                              </div>
-                          </Link>
-                          <Link to="list-group">
-                              <div className='menu-item'>
-                                  <UserAddOutlined className="icon-adduser"/>
-                                  <p className='menu-item-name'>Danh sách nhóm</p>
-                              </div>
-                          </Link>
-                          <Link to="request-friend">
-                              <div className='menu-item'>
-                                  <UserAddOutlined className="icon-adduser"/>
-                                  <p className='menu-item-name'>Lời mời kết bạn</p>
-                              </div>
-                          </Link>
-                          <Link to="danh-sach-loi-moi-vao-nhom">
-                              <div className='menu-item'>
-                                  <UserAddOutlined className="icon-adduser"/>
-                                  <p className='menu-item-name'>Lời mời vào nhóm</p>
                               </div>
                           </Link>
                       </div>

@@ -1,7 +1,8 @@
 import { upload } from "@testing-library/user-event/dist/upload";
 import { get } from "axios";
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://zaloapp-production.up.railway.app/api';
 
 export const API_ENDPOINTS = {
     register: `${API_BASE_URL}/register`,
