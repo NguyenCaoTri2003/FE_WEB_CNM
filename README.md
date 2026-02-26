@@ -1,46 +1,62 @@
-# Getting Started with Create React App
+# FE_WEB_CNM
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Giới thiệu
+FE_WEB_CNM là dự án Frontend Web cho ứng dụng Zalo CNM, được phát triển nhằm cung cấp giao diện người dùng hiện đại và tiện lợi trên nền tảng web cho sinh viên, giảng viên. Ứng dụng hỗ trợ các chức năng như nhắn tin, nhận thông báo, quản lý thông tin cá nhân và nhiều tiện ích khác phục vụ cho nhu cầu học tập và làm việc.
 
-## Available Scripts
+## Liên kết liên quan
+- [Backend Zalo(be_zalo__cnm)](https://github.com/NguyenCaoTri2003/BE_Zalo_CNM.git)
+- [Frontend Mobile Zalo(fe_mobile__cnm)](https://github.com/NguyenCaoTri2003/FE_MOBILE_CNM.git)
+- [Frontend Web Zalo(fe_web_cnm)](https://github.com/NguyenCaoTri2003/FE_WEB_CNM.git)
 
-In the project directory, you can run:
+## Tính năng chính
+- Đăng nhập, đăng ký và xác thực người dùng
+- Nhắn tin và nhận thông báo theo thời gian thực
+- Quản lý thông tin cá nhân và tài khoản
+- Tích hợp với các dịch vụ của Zalo
+- Giao diện thân thiện, dễ sử dụng trên trình duyệt web
 
-### `npm start`
+## Công nghệ sử dụng
+- ReactJS (hoặc VueJS/Angular, tùy công nghệ bạn dùng)
+- Redux (hoặc Context API)
+- RESTful API
+- WebSocket (nếu có)
+- Các thư viện hỗ trợ UI/UX cho web
+- Zego (video call)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+## Cài đặt và chạy thử
+1. Clone repository
+2. Cài đặt dependencies: `npm install` hoặc `yarn install`
+3. Chạy ứng dụng: `npm start` hoặc `yarn start`
+4. Truy cập ứng dụng qua trình duyệt tại địa chỉ được cung cấp
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Demo
+1. Đăng nhập
+![Đăng nhập](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/1.PNG)
+2. Đăng ký
+![Đăng ký](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/2.PNG)
+3. Quên mật khẩu
+![Quên mật khẩu](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/3.PNG)
+4. Trang chủ
+![Trang chủ](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/4.PNG)
+5. Danh sách bạn bè
+![Danh sách bạn bè](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/5.PNG)
+6.Danh sách lời mời kết bạn
+![Danh sách lời mời kết bạn](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/6.PNG)
+7. Tìm kiếm bạn bè
+![Tìm kiếm bạn bè](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/7.PNG)
+8. Thêm nhóm mới
+![Thêm nhóm mới](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/8.PNG)
+9. Danh sách nhóm
+![Danh sách nhóm](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/9.PNG)
+10. Quản lý nhóm
+![Quản lý nhóm](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/10.PNG)
+11. Quản lý thành viên nhóm
+![Quản lý thành viên nhóm](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/11.PNG)
+12. Quản lý quyền nhóm
+![Quản lý quyền nhóm](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/12.PNG)
+13. Chat đơn
+![Chat đơn](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/13.PNG)
+14. Chat nhóm
+![Chat nhóm](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/14.PNG)
+15. Trang cá nhân
+![Trang cá nhân](https://github.com/hoanghuytoi/BE_Zalo_CNM/blob/main/demo/15.PNG)
